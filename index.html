@@ -1,65 +1,93 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SteamFreeGames - Бесплатные игры Steam</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SteamFreeGames - Бесплатные игры Steam</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+    .card:hover { transform: scale(1.05); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+    .badge-game { background: #10b981; color: #fff; padding: .2rem .5rem; border-radius: .25rem; font-size: .75rem; font-weight: 700; }
+    .badge-dlc { background: #f59e0b; color: #fff; padding: .2rem .5rem; border-radius: .25rem; font-size: .75rem; font-weight: 700; }
+    .spinner { border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-message { background: #ef4444; color: #fff; padding: 1rem; border-radius: .5rem; margin-top: 1rem; }
+  </style>
 </head>
-<body class="bg-gray-900 text-white font-sans">
-    <div class="container mx-auto p-4">
-        <h1 class="text-3xl font-bold text-center mb-4">SteamFreeGames</h1>
-        <p class="text-center text-gray-400 mb-6">Автоматический поиск бесплатных игр Steam со 100% скидкой</p>
-        <div class="bg-gray-800 p-4 rounded-lg shadow-lg">
-            <div class="flex justify-between items-center mb-4">
-                <span class="text-lg">Всего игр: </span>
-                <span id="totalcount" class="text-lg font-semibold"></span>
-            </div>
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="bg-gray-700">
-                        <th class="p-3">Название игры</th>
-                        <th class="p-3">Ссылка</th>
-                    </tr>
-                </thead>
-                <tbody id="listcontent"></tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="2" class="text-center p-3 text-gray-400">
-                            Последнее обновление (UTC+8): <span id="uptime" class="text-red-400"></span>
-                        </td>
-                    </tr>
-                </tfoot>
-            </table>
-            <div class="text-center mt-4">
-                <a href="https://github.com/BALCETUL/SteamFreeGames" class="text-gray-400 hover:text-white flex justify-center items-center gap-2">
-                    <span>Посмотреть на GitHub</span>
-                    <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-mark-github" aria-hidden="true">
-                        <path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
-                    </svg>
-                </a>
-            </div>
-        </div>
-    </div>
-    <script>
-        function showlist() {
-            $.ajax({
-                type: "get",
-                url: "./free_goods_detail.json",
-                success: function(data) {
-                    $('#totalcount').text(data["total_count"]);
-                    $('#uptime').text(data["update_time"]);
-                    for (var i = 0; i < data["free_list"].length; ++i) {
-                        $('#listcontent').append(
-                            "<tr class='hover:bg-gray-600'><td class='p-3'>" + data["free_list"][i][0] + "</td>" +
-                            "<td class='p-3'><a href='" + data["free_list"][i][1] + "' class='bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded'>Магазин</a></td></tr>"
-                        );
-                    }
-                }
-            });
+<body class="bg-gradient-to-br from-gray-900 to-blue-900 min-h-screen flex flex-col items-center justify-center p-4">
+  <div class="text-center mb-8">
+    <h1 class="text-4xl md:text-6xl font-bold text-white mb-4 fade-in">SteamFreeGames</h1>
+    <p class="text-lg text-gray-300 fade-in" style="animation-delay: 0.2s;">
+      Сегодняшние бесплатные игры и DLC в Steam со 100% скидкой!
+    </p>
+  </div>
+
+  <div id="loading" class="flex items-center justify-center">
+    <div class="spinner"></div>
+  </div>
+
+  <div id="error" class="text-center hidden">
+    <p class="error-message">Не удалось загрузить игры. Попробуйте позже или проверьте завтра!</p>
+  </div>
+
+  <div id="games-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl w-full hidden">
+    <!-- Карточки игр будут здесь -->
+  </div>
+
+  <div id="no-games" class="text-center text-gray-300 hidden">
+    <p class="text-xl">Сегодня нет бесплатных игр или DLC. Проверьте завтра!</p>
+  </div>
+
+  <footer class="mt-8 text-center text-gray-400">
+    <p>Создано <a href="https://github.com/BALCETUL" class="text-blue-400 hover:text-blue-300">BALCETUL</a>. Основано на <a href="https://github.com/InJeCTrL/NeedFree" class="text-blue-400 hover:text-blue-300">InJeCTrL/NeedFree</a>.</p>
+  </footer>
+
+  <script>
+    async function fetchGames() {
+      try {
+        const url = 'https://raw.githubusercontent.com/BALCETUL/SteamFreeGames/main/free_goods_detail.json';
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+        const data = await resp.json();
+        document.getElementById('loading').classList.add('hidden');
+
+        const list = data.free_list || [];
+        if (list.length === 0) {
+          return document.getElementById('no-games').classList.remove('hidden');
         }
-        $(document).ready(showlist);
-    </script>
+
+        const container = document.getElementById('games-container');
+        container.classList.remove('hidden');
+
+        list.forEach(([name, link], idx) => {
+          const isDLC = /\/sub\//.test(link) || /dlc/i.test(name);
+          const card = document.createElement('div');
+          card.className = 'card bg-gray-800 p-6 rounded-lg shadow-lg transform transition duration-300 fade-in';
+          card.style.animationDelay = `${idx * 0.1}s`;
+          card.innerHTML = `
+            <div class="flex justify-between items-center mb-2">
+              <h2 class="text-xl font-semibold text-white">${name}</h2>
+              <span class="${isDLC ? 'badge-dlc' : 'badge-game'}">${isDLC ? 'DLC' : 'Игра'}</span>
+            </div>
+            <p class="text-green-400 font-bold mb-4">Бесплатно</p>
+            <a href="${link}" target="_blank"
+               class="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
+               Получить в Steam
+            </a>`;
+          container.appendChild(card);
+        });
+
+      } catch (err) {
+        console.error(err);
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('error').classList.remove('hidden');
+      }
+    }
+
+    window.onload = fetchGames;
+  </script>
 </body>
 </html>
