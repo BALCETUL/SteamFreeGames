@@ -131,7 +131,7 @@
   </div>
 
   <footer class="mt-8 text-center text-gray-400 footer">
-    <p class="flex justify-center items-center gap-2">
+    <p class="flex flex-wrap justify-center items-center gap-2">
       Создано 
       <a href="https://github.com/BALCETUL/SteamFreeGames" class="text-blue-400 hover:text-blue-300 flex items-center gap-2">
         BALCETUL
@@ -143,12 +143,36 @@
         <svg class="update-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
-        Обновлено (EEST): <span id="update-time">-</span>
+        Когда обновлено: <span id="update-time">-</span>
+      </span>
+      <span class="text-white update-box">
+        <svg class="update-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        До обновления: <span id="countdown">-</span>
       </span>
     </p>
   </footer>
 
   <script>
+    function startCountdown() {
+      const countdownElement = document.getElementById('countdown');
+      function updateCountdown() {
+        const now = new Date();
+        const nextHour = new Date(now);
+        nextHour.setHours(now.getHours() + 1, 0, 0, 0);
+        const timeLeft = nextHour - now;
+        
+        const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+        
+        countdownElement.textContent = `${hours}ч ${minutes}м ${seconds}с`;
+      }
+      updateCountdown();
+      setInterval(updateCountdown, 1000);
+    }
+
     async function fetchGames() {
       try {
         const url = 'https://raw.githubusercontent.com/BALCETUL/SteamFreeGames/main/free_goods_detail.json';
@@ -171,6 +195,8 @@
           document.getElementById('update-time').textContent = '-';
         }
 
+        startCountdown();
+
         if (list.length === 0) {
           return document.getElementById('no-games').classList.remove('hidden');
         }
@@ -188,13 +214,15 @@
             <img src="${imgUrl}" alt="${name}" class="game-img mb-4" onerror="this.src='https://via.placeholder.com/460x215?text=Нет+изображения'">
             <div class="flex justify-between items-center mb-2">
               <h2 class="text-xl font-semibold text-white">${name}</h2>
-              <span class="badge-discount">100% скидка</span>
             </div>
             <p class="text-green-400 font-bold mb-4">Бесплатно</p>
-            <a href="${link}" target="_blank"
-               class="inline-block steam-btn text-white px-4 py-2 rounded">
-               Получить в Steam
-            </a>`;
+            <div class="flex justify-between items-center">
+              <a href="${link}" target="_blank"
+                 class="inline-block steam-btn text-white px-4 py-2 rounded">
+                 Получить в Steam
+              </a>
+              <span class="badge-discount">100% скидка</span>
+            </div>`;
           container.appendChild(card);
         });
 
