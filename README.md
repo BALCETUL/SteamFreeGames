@@ -1,19 +1,24 @@
-SteamFreeGames
-Автоматический поиск и отображение бесплатных игр Steam со 100% скидкой. Проект собирает данные о играх с полной скидкой через Steam API и публикует их на сайте.
-О проекте
-Этот проект автоматически сканирует Steam Store, чтобы найти игры, которые временно бесплатны (100% скидка). Данные обновляются ежедневно с помощью GitHub Actions и отображаются на сайте: https://balcetul.github.io/SteamFreeGames.
-Как это работает
+# SteamFreeGames 🎮
 
-Скрипт: NeedFree.py использует Steam API для поиска игр со 100% скидкой.
-Обновление: GitHub Actions запускает скрипт ежедневно, обновляя файл free_goods_detail.json.
-Сайт: index.html отображает список бесплатных игр в современном тёмном дизайне.
+**SteamFreeGames** — это автоматизированный проект по сбору и отображению игр со 100% скидкой в Steam.  
+Проект автоматически обновляется каждый день и отображает список бесплатных игр на веб-странице.
 
-Установка и запуск
+🔗 **Сайт:** [SteamFreeGames](https://balcetul.github.io/SteamFreeGames/)  
+🔁 Обновление: каждый день в 00:00 (по UTC)  
+📄 JSON-данные: [free_goods_detail.json](./free_goods_detail.json)
 
-Перейдите на сайт: https://balcetul.github.io/SteamFreeGames.
-Данные обновляются автоматически каждый день.
+## Возможности
 
-Автор
-Создано пользователем BALCETUL. Основано на идее InJeCTrL/NeedFree.
-Лицензия
-Этот проект распространяется под лицензией MIT (если применимо, проверьте файл LICENSE).
+- Автоматический парсинг бесплатных игр из Steam
+- Современный интерфейс на Bootstrap 5
+- Обновление данных через GitHub Actions
+
+## Автор
+
+BALCETUL — [GitHub профайл](https://github.com/BALCETUL)
+
+---
+
+### Скриншот
+
+![screenshot](https://user-images.githubusercontent.com/your_screenshot.png)
