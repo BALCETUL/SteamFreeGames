@@ -159,29 +159,16 @@
       const countdownElement = document.getElementById('countdown');
       function updateCountdown() {
         const now = new Date();
-        const nowUTC = new Date(Date.UTC(
-          now.getUTCFullYear(),
-          now.getUTCMonth(),
-          now.getUTCDate(),
-          now.getUTCHours(),
-          now.getUTCMinutes(),
-          now.getUTCSeconds()
-        ));
-        const nextHourUTC = new Date(Date.UTC(
-          nowUTC.getUTCFullYear(),
-          nowUTC.getUTCMonth(),
-          nowUTC.getUTCDate(),
-          nowUTC.getUTCHours() + 1,
-          0, 0, 0
-        ));
-        const eestOffset = 3 * 60 * 60 * 1000; // EEST = UTC+3
-        const timeLeft = nextHourUTC.getTime() - nowUTC.getTime();
+        const nowUTC = new Date(now.getTime() - (now.getTimezoneOffset() * 60 * 1000));
+        const nextHourUTC = new Date(nowUTC);
+        nextHourUTC.setUTCHours(nextHourUTC.getUTCHours() + 1, 0, 0, 0);
+        const timeLeft = nextHourUTC - nowUTC;
 
         const hours = Math.floor(timeLeft / (1000 * 60 * 60));
         const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
 
-        countdownElement.textContent = `${hours}ч ${minutes}м ${seconds}с`;
+        countdownElement.textContent = `${hours}ч ${minutes}м ${seconds}s`;
       }
       updateCountdown();
       setInterval(updateCountdown, 1000);
@@ -200,11 +187,7 @@
         document.getElementById('total-count').textContent = data.total_count || 0;
 
         if (data.update_time) {
-          const utcDate = new Date(data.update_time + 'Z');
-          const eestOffset = 3 * 60 * 60 * 1000; // EEST = UTC+3
-          const eestDate = new Date(utcDate.getTime() + eestOffset);
-          const formattedTime = eestDate.toISOString().replace('T', ' ').slice(0, 19);
-          document.getElementById('update-time').textContent = formattedTime;
+          document.getElementById('update-time').textContent = data.update_time;
         } else {
           document.getElementById('update-time').textContent = '-';
         }
@@ -219,23 +202,22 @@
         container.classList.remove('hidden');
 
         list.forEach(([name, link], idx) => {
-          const appId = link.match(/\/app\/(\d+)/)?.[1];
-          const imgUrl = appId ? `https://steamcdn-a.akamaihd.net/steam/apps/${appId}/header.jpg` : 'https://via.placeholder.com/460x215?text=Нет+изображения';
+          const appId = link.match(/(\d+)/)?.[0];
+          const imgUrl = appId ? `https://steamcdn-a.akamaihd.net/steam/apps/${appId}/header.jpg` : 'https://via.placeholder.com/460x215?text=Нет+Image';
           const card = document.createElement('div');
-          card.className = 'card p-6 rounded-lg shadow-lg transform transition duration-300 fade-in';
-          card.style.animationDelay = `${idx * 0.1}s`;
+          card.className = 'card p-6 rounded-lg shadow-lg';
+          card.style.animation = `fadeIn 0.5s ease-out ${idx * 0.1}s forwards`;
           card.innerHTML = `
-            <img src="${imgUrl}" alt="${name}" class="game-img mb-4" onerror="this.src='https://via.placeholder.com/460x215?text=Нет+изображения'">
+            <img src="${imgUrl}" alt="${name}" class="game-img mb-4" onerror="this.src='https://via.placeholder.com/460x215?text=Нет+Image'"/>
             <div class="flex justify-between items-center mb-2">
               <h2 class="text-xl font-semibold text-white">${name}</h2>
             </div>
             <p class="text-green-400 font-bold mb-4">Бесплатно</p>
             <div class="flex justify-between items-center">
-              <a href="${link}" target="_blank"
-                 class="inline-block steam-btn text-white px-4 py-2 rounded">
-                 Получить в Steam
+              <a href="${link}" target="_blank" class="steam-btn text-center text-white">
+                Получить в Steam
               </a>
-              <span class="badge-discount">100% скидка</span>
+              <span class="badge-discount">100%</span>
             </div>`;
           container.appendChild(card);
         });
