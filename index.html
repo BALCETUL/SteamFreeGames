@@ -159,14 +159,22 @@
       const countdownElement = document.getElementById('countdown');
       function updateCountdown() {
         const now = new Date();
-        const nextHour = new Date(now);
-        nextHour.setHours(now.getHours() + 1, 0, 0, 0);
-        const timeLeft = nextHour - now;
-        
+        const eestOffset = 3 * 60 * 60 * 1000; // EEST = UTC+3
+        const nowEEST = new Date(now.getTime() + eestOffset);
+        const nextHourUTC = new Date(Date.UTC(
+          nowEEST.getUTCFullYear(),
+          nowEEST.getUTCMonth(),
+          nowEEST.getUTCDate(),
+          nowEEST.getUTCHours() + 1,
+          0, 0, 0
+        ));
+        const nextHourEEST = new Date(nextHourUTC.getTime() + eestOffset);
+        const timeLeft = nextHourEEST - nowEEST;
+
         const hours = Math.floor(timeLeft / (1000 * 60 * 60));
         const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-        
+
         countdownElement.textContent = `${hours}ч ${minutes}м ${seconds}с`;
       }
       updateCountdown();
