@@ -159,7 +159,14 @@
       const countdownElement = document.getElementById('countdown');
       function updateCountdown() {
         const now = new Date();
-        const nowUTC = new Date(now.getTime() - (now.getTimezoneOffset() * 60 * 1000));
+        const nowUTC = new Date(Date.UTC(
+          now.getUTCFullYear(),
+          now.getUTCMonth(),
+          now.getUTCDate(),
+          now.getUTCHours(),
+          now.getUTCMinutes(),
+          now.getUTCSeconds()
+        ));
         const nextHourUTC = new Date(Date.UTC(
           nowUTC.getUTCFullYear(),
           nowUTC.getUTCMonth(),
@@ -168,8 +175,7 @@
           0, 0, 0
         ));
         const eestOffset = 3 * 60 * 60 * 1000; // EEST = UTC+3
-        const nextHourEEST = new Date(nextHourUTC.getTime() + eestOffset);
-        const timeLeft = nextHourEEST - now;
+        const timeLeft = nextHourUTC.getTime() - nowUTC.getTime();
 
         const hours = Math.floor(timeLeft / (1000 * 60 * 60));
         const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
