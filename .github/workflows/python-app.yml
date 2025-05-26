@@ -3,6 +3,7 @@ name: Crawler runner
 on:
   schedule:
     - cron: '0 0 * * *'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -25,6 +26,6 @@ jobs:
       run: |
         git pull
         git config --global user.name 'BALCETUL'
-        git config --global user.email 'your-email@example.com'
+        git config --global user.email 'balcetul@gmail.com'
         git commit -am "Автоматическое обновление JSON с бесплатными играми"
         git push
