@@ -21,21 +21,13 @@ BALCETUL — [GitHub профайл](https://github.com/BALCETUL)
 
 
 
-
 # SteamFreeGames 🎮
 
-**SteamFreeGames** — автоматический парсер бесплатных игр Steam (скидка 100%) и веб-интерфейс для их отображения.
+**SteamFreeGames** — автоматический парсер бесплатных игр Steam (100%-скидка) и веб-интерфейс для их отображения.
 
 **Сайт:** https://balcetul.github.io/SteamFreeGames/  
 **Обновление:** ежедневно в 00:00 (UTC)  
-**Данные (JSON):** [free_goods_detail.json](./free_goods_detail.json)
+**Данные:** [free_goods_detail.json](./free_goods_detail.json)
 
-## Возможности
-
-- Парсинг списка бесплатных игр через API Steam.
-- Обновление данных с помощью GitHub Actions.
-- Красивый тёмный интерфейс на Bootstrap 5.
-
-## Структура репозитория
-
+## Структура
 
