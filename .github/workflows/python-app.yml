@@ -1,11 +1,9 @@
 name: Crawler runner
 
 on:
-  # расписание: каждый день в 00:00 UTC
   schedule:
-    - cron: '0 0 * * *'
-  # ручной запуск из интерфейса GitHub
-  workflow_dispatch:
+    - cron: '0 21 * * *'   # 21:00 UTC → ~00:00 Киев (летом UTC+3)
+  workflow_dispatch:      # кнопка для ручного запуска один раз
 
 jobs:
   build:
@@ -25,13 +23,12 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
       - name: Run crawler
-        run: |
-          python NeedFree.py
+        run: python NeedFree.py
 
       - name: Update free details json
         run: |
           git pull
           git config --global user.name 'BALCETUL'
-          git config --global user.email 'balcetul@gmail.com'
+          git config --global user.email 'youremail@example.com'
           git commit -am "Автоматическое обновление free_goods_detail.json"
           git push
