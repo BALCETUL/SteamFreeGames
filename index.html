@@ -6,38 +6,26 @@
   <title>SteamFreeGames — Бесплатные игры Steam</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <style>
-    body {
-      background-color: #121212;
-      color: #e0e0e0;
-    }
-    .table-dark {
-      color: #e0e0e0;
-    }
-    a.btn-primary {
-      background-color: #1f80e0;
-      border-color: #1f80e0;
-    }
-    a.btn-primary:hover {
-      background-color: #1562a2;
-    }
+    body { background-color: #121212; color: #e0e0e0; }
+    .table-dark { color: #e0e0e0; }
+    a.btn-primary { background-color: #1f80e0; border-color: #1f80e0; }
+    a.btn-primary:hover { background-color: #1562a2; }
   </style>
 </head>
 <body>
   <div class="container py-4">
     <h1 class="mb-4">SteamFreeGames</h1>
-    <p>Список игр со скидкой 100% в Steam (обновляется каждый день)</p>
+    <p>Список игр со скидкой 100% в Steam (обновляется каждый день в 00:00 по Киеву)</p>
     <div class="mb-3">
       <span class="fw-bold">Всего игр:</span> <span id="totalcount">...</span>
     </div>
     <table class="table table-dark table-striped">
-      <thead>
-        <tr><th>Игра</th><th>Ссылка</th></tr>
-      </thead>
+      <thead><tr><th>Игра</th><th>Ссылка</th></tr></thead>
       <tbody id="listcontent"></tbody>
       <tfoot>
         <tr>
           <td colspan="2" class="text-center">
-            Обновлено (UTC+8): <span id="uptime" class="text-danger"></span>
+            Обновлено (UTC+3): <span id="uptime" class="text-danger"></span>
           </td>
         </tr>
       </tfoot>
