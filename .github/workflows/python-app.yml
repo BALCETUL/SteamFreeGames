@@ -1,25 +1,33 @@
 name: Crawler runner
 
 on:
+  # расписание: каждый день в 00:00 UTC
   schedule:
     - cron: '0 0 * * *'
+  # ручной запуск из интерфейса GitHub
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v3
+
       - name: Set up Python 3.10
         uses: actions/setup-python@v3
         with:
           python-version: "3.10"
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
       - name: Run crawler
         run: |
           python NeedFree.py
+
       - name: Update free details json
         run: |
           git pull
