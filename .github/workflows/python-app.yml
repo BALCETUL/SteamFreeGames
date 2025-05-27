@@ -2,8 +2,8 @@ name: Crawler runner
 
 on:
   schedule:
-    - cron: '0 21 * * *'   # 21:00 UTC → ~00:00 Киев (летом UTC+3)
-  workflow_dispatch:      # кнопка для ручного запуска один раз
+    - cron: '0 * * * *'    # каждый час в 00 минут UTC → по Киеву тоже на нулевой минуте каждого часа
+  workflow_dispatch:      # кнопка для ручного запуска
 
 jobs:
   build:
