@@ -131,9 +131,7 @@
     <p class="error-message">Не удалось загрузить список. Попробуйте позже!</p>
   </div>
 
-  <div id="games-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl w-full hidden">
-  </div>
-
+  <div id="games-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl w-full hidden"></div>
   <div id="no-games" class="text-center text-gray-300 hidden">
     <p class="text-xl">На данный момент нет бесплатных предложений.</p>
   </div>
@@ -164,7 +162,6 @@
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
         const data = await resp.json();
 
-        // Скрываем заглушки
         document.getElementById('loading').classList.add('hidden');
         const list = data.free_list || [];
         document.getElementById('total-count').textContent = data.total_count || 0;
@@ -179,18 +176,20 @@
         container.classList.remove('hidden');
 
         list.forEach(([name, link], idx) => {
-          // Выделяем appId или subId из ссылки
-          const match = link.match(/\/(sub|app)\/(\d+)/);
-          const type = match && match[1] === 'sub' ? 'DLC' : 'Игра';
-          const id = match ? match[2] : null;
-          const imgUrl = id
-            ? `https://steamcdn-a.akamaihd.net/steam/${match[1]}s/${id}/header.jpg`
-            : 'https://via.placeholder.com/460x215?text=Нет+Image';
+          let type, id, imgUrl;
+          if (link.includes('/sub/')) {
+            type = 'DLC';
+            id = link.match(/\/sub\/(\d+)/)[1];
+            imgUrl = `https://steamcdn-a.akamaihd.net/steam/subs/${id}/header.jpg`;
+          } else {
+            type = 'Игра';
+            id = link.match(/\/app\/(\d+)/)[1];
+            imgUrl = `https://steamcdn-a.akamaihd.net/steam/apps/${id}/header.jpg`;
+          }
 
           const card = document.createElement('div');
           card.className = 'card p-6 rounded-lg shadow-lg';
           card.style.animation = `fadeIn 0.5s ease-out ${idx * 0.1}s forwards`;
-
           card.innerHTML = `
             <img src="${imgUrl}" alt="${name}" class="game-img mb-4"
                  onerror="this.src='https://via.placeholder.com/460x215?text=Нет+Image'"/>
@@ -203,9 +202,8 @@
               <a href="${link}" target="_blank" class="steam-btn text-center text-white">
                 Получить в Steam
               </a>
-              <span class="badge-discount">100%</span>
+              <span class="badge-discount">100% скидка</span>
             </div>`;
-
           container.appendChild(card);
         });
 
@@ -215,7 +213,6 @@
         document.getElementById('error').classList.remove('hidden');
       }
     }
-
     window.onload = fetchGames;
   </script>
 </body>
