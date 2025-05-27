@@ -1,63 +1,222 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SteamFreeGames — Бесплатные игры Steam</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SteamFreeGames — Бесплатные игры и DLC</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body { background-color: #121212; color: #e0e0e0; }
-    .table-dark { color: #e0e0e0; }
-    a.btn-primary { background-color: #1f80e0; border-color: #1f80e0; }
-    a.btn-primary:hover { background-color: #1562a2; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes neonGlow { 0% { box-shadow: 0 0 5px #3b82f6, 0 0 10px #3b82f6; } 50% { box-shadow: 0 0 10px #3b82f6, 0 0 20px #3b82f6; } 100% { box-shadow: 0 0 5px #3b82f6, 0 0 10px #3b82f6; } }
+    .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+    .card { 
+      background: #1f2937; 
+      border: 1px solid rgba(59, 130, 246, 0.2); 
+      transition: all 0.3s ease; 
+      opacity: 0;
+    }
+    .card:hover { 
+      transform: scale(1.05); 
+      box-shadow: 0 10px 20px rgba(0,0,0,0.5), 0 0 15px rgba(59, 130, 246, 0.3); 
+    }
+    .badge-discount { 
+      background: linear-gradient(to right, #22c55e, #16a34a); 
+      color: #fff; 
+      padding: .3rem .6rem; 
+      border-radius: .25rem; 
+      font-size: .8rem; 
+      font-weight: 700; 
+    }
+    .badge-type { 
+      background: linear-gradient(to right, #f472b6, #d946ef); 
+      color: #fff; 
+      padding: .2rem .5rem; 
+      border-radius: .25rem; 
+      font-size: .75rem; 
+      font-weight: 600; 
+      margin-left: .5rem;
+    }
+    .spinner { 
+      border: 4px solid rgba(255,255,255,0.3); 
+      border-top: 4px solid #3b82f6; 
+      border-radius: 50%; 
+      width: 40px; 
+      height: 40px; 
+      animation: spin 1s linear infinite; 
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-message { 
+      background: #ef4444; 
+      color: #fff; 
+      padding: 1rem; 
+      border-radius: .5rem; 
+      margin-top: 1rem; 
+    }
+    .game-img { 
+      width: 100%; 
+      height: 150px; 
+      object-fit: cover; 
+      border-radius: .5rem; 
+      border: 1px solid rgba(255,255,255,0.1); 
+    }
+    .count-box { 
+      background: linear-gradient(135deg, #3b82f6, #ec4899); 
+      padding: .75rem 1.5rem; 
+      border-radius: 3rem; 
+      display: inline-flex; 
+      align-items: center; 
+      gap: .75rem; 
+      box-shadow: 0 6px 12px rgba(0,0,0,0.3); 
+      animation: neonGlow 2s infinite; 
+      border: 2px solid rgba(255,255,255,0.2); 
+    }
+    .count-icon { width: 1.8rem; height: 1.8rem; fill: #fff; }
+    .footer { 
+      background: linear-gradient(to right, #1e1b4b, #111827); 
+      padding: 1.5rem; 
+      border-radius: .5rem; 
+      border: 1px solid rgba(59, 130, 246, 0.2); 
+    }
+    .update-box { 
+      background: linear-gradient(to right, #8b5cf6, #6d28d9); 
+      padding: .5rem 1rem; 
+      border-radius: 3rem; 
+      display: inline-flex; 
+      align-items: center; 
+      gap: .5rem; 
+      margin-left: 1rem; 
+    }
+    .update-icon { width: 1.2rem; height: 1.2rem; fill: #fff; }
+    .steam-btn { 
+      background: linear-gradient(to right, #3b82f6, #2563eb); 
+      padding: .5rem 1rem; 
+      border-radius: .25rem; 
+      transition: all 0.3s ease; 
+    }
+    .steam-btn:hover { 
+      background: linear-gradient(to right, #2563eb, #1d4ed8); 
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); 
+    }
+    body {
+      background: linear-gradient(135deg, #0f172a, #1e1b4b, #2e1065);
+      background-size: 200% 200%;
+      animation: gradientShift 15s ease infinite;
+    }
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
   </style>
 </head>
-<body>
-  <div class="container py-4">
-    <h1 class="mb-4">SteamFreeGames</h1>
-    <p>Список игр со скидкой 100% в Steam (обновляется каждый день в 00:00 по Киеву)</p>
-    <div class="mb-3">
-      <span class="fw-bold">Всего игр:</span> <span id="totalcount">...</span>
-    </div>
-    <table class="table table-dark table-striped">
-      <thead><tr><th>Игра</th><th>Ссылка</th></tr></thead>
-      <tbody id="listcontent"></tbody>
-      <tfoot>
-        <tr>
-          <td colspan="2" class="text-center">
-            Обновлено (UTC+3): <span id="uptime" class="text-danger"></span>
-          </td>
-        </tr>
-      </tfoot>
-    </table>
-    <footer class="mt-4">
-      <a href="https://github.com/BALCETUL/SteamFreeGames" class="text-decoration-none">
-        Посмотреть исходники на GitHub
-      </a>
-    </footer>
+<body class="min-h-screen flex flex-col items-center p-4">
+  <div class="w-full text-center mb-8">
+    <h1 class="text-4xl md:text-6xl font-bold text-white mb-2 fade-in">SteamFreeGames</h1>
+    <p class="text-lg text-gray-300 fade-in" style="animation-delay: 0.2s;">
+      Сегодня бесплатные игры и DLC в Steam со 100% скидкой!
+    </p>
+    <p class="text-md text-white count-box mt-4 fade-in" style="animation-delay: 0.4s;">
+      <svg class="count-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+      </svg>
+      Бесплатно сейчас: <span id="total-count">0</span>
+    </p>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <div id="loading" class="flex items-center justify-center my-8">
+    <div class="spinner"></div>
+  </div>
+
+  <div id="error" class="text-center hidden">
+    <p class="error-message">Не удалось загрузить список. Попробуйте позже!</p>
+  </div>
+
+  <div id="games-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl w-full hidden">
+  </div>
+
+  <div id="no-games" class="text-center text-gray-300 hidden">
+    <p class="text-xl">На данный момент нет бесплатных предложений.</p>
+  </div>
+
+  <footer class="mt-8 text-center text-gray-400 footer w-full max-w-6xl">
+    <p class="flex flex-wrap justify-center items-center gap-2">
+      Репозиторий 
+      <a href="https://github.com/BALCETUL/SteamFreeGames" class="text-blue-400 hover:text-blue-300 flex items-center gap-2">
+        BALCETUL
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+        </svg>
+      </a>
+      <span class="text-white update-box">
+        <svg class="update-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Обновлено (UTC+3): <span id="update-time">-</span>
+      </span>
+    </p>
+  </footer>
+
   <script>
-    fetch('./free_goods_detail.json')
-      .then(resp => resp.json())
-      .then(data => {
-        document.getElementById('totalcount').innerText = data.total_count;
-        document.getElementById('uptime').innerText = data.update_time;
-        const tbody = document.getElementById('listcontent');
-        data.free_list.forEach(item => {
-          const tr = document.createElement('tr');
-          tr.classList.add('table-success');
-          tr.innerHTML = `
-            <td>${item[0]}</td>
-            <td>
-              <a href="${item[1]}" class="btn btn-primary" target="_blank">
-                Перейти в магазин
+    async function fetchGames() {
+      try {
+        const url = 'https://raw.githubusercontent.com/BALCETUL/SteamFreeGames/main/free_goods_detail.json';
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const data = await resp.json();
+
+        // Скрываем заглушки
+        document.getElementById('loading').classList.add('hidden');
+        const list = data.free_list || [];
+        document.getElementById('total-count').textContent = data.total_count || 0;
+        document.getElementById('update-time').textContent = data.update_time || '-';
+
+        if (list.length === 0) {
+          document.getElementById('no-games').classList.remove('hidden');
+          return;
+        }
+
+        const container = document.getElementById('games-container');
+        container.classList.remove('hidden');
+
+        list.forEach(([name, link], idx) => {
+          // Выделяем appId или subId из ссылки
+          const match = link.match(/\/(sub|app)\/(\d+)/);
+          const type = match && match[1] === 'sub' ? 'DLC' : 'Игра';
+          const id = match ? match[2] : null;
+          const imgUrl = id
+            ? `https://steamcdn-a.akamaihd.net/steam/${match[1]}s/${id}/header.jpg`
+            : 'https://via.placeholder.com/460x215?text=Нет+Image';
+
+          const card = document.createElement('div');
+          card.className = 'card p-6 rounded-lg shadow-lg';
+          card.style.animation = `fadeIn 0.5s ease-out ${idx * 0.1}s forwards`;
+
+          card.innerHTML = `
+            <img src="${imgUrl}" alt="${name}" class="game-img mb-4"
+                 onerror="this.src='https://via.placeholder.com/460x215?text=Нет+Image'"/>
+            <div class="flex justify-between items-center mb-2">
+              <h2 class="text-xl font-semibold text-white">${name}</h2>
+              <span class="badge-type">${type}</span>
+            </div>
+            <p class="text-green-400 font-bold mb-4">Бесплатно</p>
+            <div class="flex justify-between items-center">
+              <a href="${link}" target="_blank" class="steam-btn text-center text-white">
+                Получить в Steam
               </a>
-            </td>`;
-          tbody.appendChild(tr);
+              <span class="badge-discount">100%</span>
+            </div>`;
+
+          container.appendChild(card);
         });
-      });
+
+      } catch (err) {
+        console.error(err);
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('error').classList.remove('hidden');
+      }
+    }
+
+    window.onload = fetchGames;
   </script>
 </body>
 </html>
