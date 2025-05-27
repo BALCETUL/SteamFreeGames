@@ -32,6 +32,6 @@ jobs:
         run: |
           git pull
           git config --global user.name 'BALCETUL'
-          git config --global user.email 'youremail@example.com'
+          git config --global user.email 'balcetul@gmail.com'
           git commit -am "Автоматическое обновление free_goods_detail.json"
           git push
