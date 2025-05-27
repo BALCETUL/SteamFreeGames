@@ -176,15 +176,27 @@
         container.classList.remove('hidden');
 
         list.forEach(([name, link], idx) => {
-          let type, id, imgUrl;
-          if (link.includes('/sub/')) {
+          // Определяем тип на основе URL и названия
+          let type = 'Игра';
+          let id, imgUrl;
+          const subMatch = link.match(/\/sub\/(\d+)/);
+          const appMatch = link.match(/\/app\/(\d+)/);
+
+          if (subMatch) {
             type = 'DLC';
-            id = link.match(/\/sub\/(\d+)/)[1];
+            id = subMatch[1];
             imgUrl = `https://steamcdn-a.akamaihd.net/steam/subs/${id}/header.jpg`;
-          } else {
-            type = 'Игра';
-            id = link.match(/\/app\/(\d+)/)[1];
+          } else if (name.toUpperCase().includes('DLC')) {
+            type = 'DLC';
+            if (appMatch) {
+              id = appMatch[1];
+              imgUrl = `https://steamcdn-a.akamaihd.net/steam/subs/${id}/header.jpg`;
+            }
+          } else if (appMatch) {
+            id = appMatch[1];
             imgUrl = `https://steamcdn-a.akamaihd.net/steam/apps/${id}/header.jpg`;
+          } else {
+            imgUrl = 'https://via.placeholder.com/460x215?text=Нет+Image';
           }
 
           const card = document.createElement('div');
