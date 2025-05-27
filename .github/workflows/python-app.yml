@@ -27,3 +27,4 @@ jobs:
           git config --global user.email 'youremail@example.com'
           git commit -am "Автоматическое обновление free_goods_detail.json"
           git push
+ 
