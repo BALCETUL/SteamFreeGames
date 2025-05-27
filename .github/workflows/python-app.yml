@@ -2,11 +2,11 @@ name: Crawler runner
 
 on:
   schedule:
-    - cron: '0 * * * *'
-  workflow_dispatch:
+    - cron: '0 0 * * *'
 
 jobs:
   build:
+
     runs-on: ubuntu-latest
 
     steps:
@@ -25,8 +25,7 @@ jobs:
     - name: Update free details json
       run: |
         git pull
-        git config --global user.name 'BALCETUL'
-        git config --global user.email 'balcetul@gmail.com'
-        git add .
-        git commit -m "Автоматическое обновление JSON с бесплатными играми" || true
+        git config --global user.name 'InJeCTrL'
+        git config --global user.email 'dap1933@hotmail.com'
+        git commit -am "Automated update json"
         git push
