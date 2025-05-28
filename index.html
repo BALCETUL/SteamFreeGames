@@ -59,12 +59,12 @@
       color: #fff;
       padding: 0.1rem 0.3rem;
       border-radius: .25rem;
-      font-size: 0.65rem;
       font-weight: 600;
       box-shadow: 0 0 5px rgba(34,197,94,0.5);
       opacity: 0.9;
       z-index: 10;
       animation: fadeIn 0.5s ease-out;
+      /* font-size removed for larger default text */
     }
     .steam-btn {
       background: linear-gradient(to right, #3b82f6, #2563eb);
@@ -108,9 +108,10 @@
       color: #e2e8f0;
       padding: .75rem 1rem;
       border-radius: .5rem;
-      width: 220px;
-      font-size: .75rem;
-      line-height: 1.2;
+      width: 280px;         /* increased width */
+      font-size: .85rem;    /* larger text */
+      line-height: 1.4;
+      white-space: pre-line; /* respect line breaks */
       opacity: 0;
       transform: translateY(-5px);
       transition: opacity 0.2s ease, transform 0.2s ease;
@@ -132,16 +133,16 @@
     </svg>
     Обновлено (UTC+3): <span id="update-time">-</span>
     <div class="tooltip">
-      Этот сайт автоматически собирает "ИГР и DLC" со скидкой 100% в Steam.<br>
-      Обновление данных происходит каждый час. (могут быть задержка от сервера)<br>
+      Этот сайт автоматически собирает "ИГР и DLC" со скидкой 100% в Steam.
+      Обновление данных происходит каждый час.
       Скрипт парсит магазин Steam и обновляет список в JSON.
     </div>
   </div>
 
   <div class="w-full text-center mb-8 mt-12">
-    <h1 class="text-4xl md:text-6xl font-bold mb-2 fade-in text-white">SteamFreeGames</h1>
-    <p class="text-lg text-gray-300 fade-in" style="animation-delay: 0.2s;">Сегодня бесплатные предложения в Steam со 100% скидкой!</p>
-    <p class="text-md count-box mt-4 fade-in text-white" style="animation-delay: 0.4s;">Бесплатно сейчас: <span id="total-count">0</span></p>
+    <h1 class="text-4xl md:text-6xl font-bold mb-2 animate__fadeIn text-white">SteamFreeGames</h1>
+    <p class="text-lg text-gray-300 animate__fadeIn" style="animation-delay: 0.2s;">Сегодня бесплатные предложения в Steam со 100% скидкой!</p>
+    <p class="text-md mt-4 animate__fadeIn text-white" style="animation-delay: 0.4s;">Бесплатно сейчас: <span id="total-count">0</span></p>
   </div>
 
   <div id="loading" class="flex items-center justify-center my-8"><div class="loading-spinner"></div></div>
@@ -162,23 +163,44 @@
         document.getElementById('update-time').textContent = data.update_time || '-';
 
         const list = data.free_list || [];
-        if (!list.length) return document.getElementById('no-games').classList.remove('hidden');
+        if (!list.length) {
+          document.getElementById('no-games').classList.remove('hidden');
+          return;
+        }
 
-        const container = document.getElementById('games-container'); container.classList.remove('hidden');
+        const container = document.getElementById('games-container');
+        container.classList.remove('hidden');
         list.forEach(([name, link], idx) => {
-          let id = link.includes('/sub/') ? link.match(/\/sub\/(\d+)/)[1] : link.match(/\/app\/(\d+)/)[1];
-          let imgUrl = link.includes('/sub/')
-            ? `https://steamcdn-a.akamaihd.net/steam/subs/${id}/header.jpg`
-            : `https://steamcdn-a.akamaihd.net/steam/apps/${id}/header.jpg`;
+          let id = link.includes('/sub/') ?
+            link.match(/\/sub\/(\d+)/)[1] :
+            link.match(/\/app\/(\d+)/)[1];
+          let imgUrl = link.includes('/sub/') ?
+            `https://steamcdn-a.akamaihd.net/steam/subs/${id}/header.jpg` :
+            `https://steamcdn-a.akamaihd.net/steam/apps/${id}/header.jpg`;
 
           const card = document.createElement('div');
-          card.className = 'card animate__animated animate__fadeInUp'; card.style.animationDelay = `${idx*0.1}s`;
+          card.className = 'card animate__animated animate__fadeInUp';
+          card.style.animationDelay = `${idx * 0.1}s`;
           card.innerHTML = `
-            <div class="img-container"><img src="${imgUrl}" alt="${name}" class="game-img" onerror="this.src='https://via.placeholder.com/460x215?text=Нет+Image'"/><span class="discount-badge">100% скидка</span></div>
-            <div class="p-4"><h3 class="text-xl font-semibold text-white mb-2">${name}</h3><a href="${link}" target="_blank" class="steam-btn">Получить в Steam</a></div>`;
+            <div class="img-container">
+              <img src="${imgUrl}"
+                   alt="${name}"
+                   class="game-img"
+                   loading="lazy"
+                   onerror="this.src='https://via.placeholder.com/460x215?text=Нет+Image'"/>
+              <span class="discount-badge">100% скидка</span>
+            </div>
+            <div class="p-4">
+              <h3 class="text-xl font-semibold text-white mb-2">${name}</h3>
+              <a href="${link}" target="_blank" class="steam-btn">Получить в Steam</a>
+            </div>`;
           container.appendChild(card);
         });
-      } catch (e) { console.error(e); document.getElementById('loading').classList.add('hidden'); document.getElementById('error').classList.remove('hidden'); }
+      } catch (e) {
+        console.error(e);
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('error').classList.remove('hidden');
+      }
     }
     document.addEventListener('DOMContentLoaded', fetchGames);
   </script>
