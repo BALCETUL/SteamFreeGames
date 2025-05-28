@@ -50,8 +50,7 @@
       display: block;
     }
     .discount-badge {
-      position: absolute;
-      top: .2rem; right: .2rem;
+      position: absolute; top: .2rem; right: .2rem;
       background: linear-gradient(to right, #22c55e, #16a34a);
       color: #fff; padding: .1rem .3rem;
       border-radius: .25rem; font-weight: 600;
@@ -127,30 +126,42 @@
     <ul id="history-list"></ul>
   </div>
 
-  <!-- Контент -->
+  <!-- Заголовок и счётчик -->
   <div class="w-full text-center mb-8 mt-12">
     <h1 class="text-4xl md:text-6xl font-bold animate__fadeIn text-white">SteamFreeGames</h1>
     <p class="text-lg text-gray-300 animate__fadeIn" style="animation-delay:.2s;">Сегодня бесплатные предложения в Steam со 100% скидкой!</p>
-    <p class="mt-4 animate__fadeIn text-white" style="animation-delay:.4s;">Бесплатно сейчас: <span id="total-count">0</span></p>
+    <p class="mt-4 animate__fadeIn text-white" style="animation-delay:.4s;">
+      Бесплатно сейчас: <span id="total-count">0</span>
+    </p>
   </div>
 
-  <div id="loading" class="flex items-center justify-center my-8"><div class="loading-spinner"></div></div>
-  <div id="error" class="text-center hidden"><p class="error-message">Не удалось загрузить список. Попробуйте позже!</p></div>
-  <div id="no-games" class="text-center text-gray-300 hidden"><p class="text-xl">На данный момент нет бесплатных предложений.</p></div>
+  <!-- Статусы -->
+  <div id="loading" class="flex items-center justify-center my-8">
+    <div class="loading-spinner"></div>
+  </div>
+  <div id="error" class="text-center hidden">
+    <p class="error-message">Не удалось загрузить список. Попробуйте позже!</p>
+  </div>
+  <div id="no-games" class="text-center text-gray-300 hidden">
+    <p class="text-xl">На данный момент нет бесплатных предложений.</p>
+  </div>
+
+  <!-- Карточки игр -->
   <div id="games-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl w-full hidden"></div>
 
   <script>
     async function fetchGames() {
       try {
-        const resp = await fetch(
-          'https://raw.githubusercontent.com/BALCETUL/SteamFreeGames/main/free_goods_detail.json',
-          { cache: 'no-store' }
-        );
+        const url = 'https://raw.githubusercontent.com/BALCETUL/SteamFreeGames/main/free_goods_detail.json'
+                  + '?t=' + new Date().getTime();
+        const resp = await fetch(url, { cache: 'no-store' });
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
         const data = await resp.json();
+        console.log('Получили JSON:', data);
 
-        // Основные поля
         document.getElementById('loading').classList.add('hidden');
+        document.getElementById('error').classList.add('hidden');
+
         document.getElementById('total-count').textContent = data.total_count || 0;
         document.getElementById('update-time').textContent = data.update_time || '-';
 
@@ -168,24 +179,32 @@
           });
         }
 
-        // Список игр
-        const list = data.free_list || [];
-        if (!list.length) {
-          document.getElementById('no-games').classList.remove('hidden');
+        // Игры
+        const container = document.getElementById('games-container');
+        const noGames = document.getElementById('no-games');
+        container.innerHTML = '';
+        noGames.classList.add('hidden');
+        container.classList.add('hidden');
+
+        const listGames = data.free_list || [];
+        console.log('free_list.length =', listGames.length);
+        if (!listGames.length) {
+          noGames.classList.remove('hidden');
           return;
         }
-        const container = document.getElementById('games-container');
+
         container.classList.remove('hidden');
-        list.forEach(([name, link], idx) => {
-          const id = link.includes('/sub/')
-            ? link.match(/\/sub\/(\d+)/)[1]
-            : link.match(/\/app\/(\d+)/)[1];
-          const imgUrl = link.includes('/sub/')
-            ? `https://steamcdn-a.akamaihd.net/steam/subs/${id}/header.jpg`
-            : `https://steamcdn-a.akamaihd.net/steam/apps/${id}/header.jpg`;
+        listGames.forEach(([name, link], idx) => {
+          const id = link.includes('/sub/') ?
+            link.match(/\/sub\/(\d+)/)[1] :
+            link.match(/\/app\/(\d+)/)[1];
+          const imgUrl = link.includes('/sub/') ?
+            `https://steamcdn-a.akamaihd.net/steam/subs/${id}/header.jpg` :
+            `https://steamcdn-a.akamaihd.net/steam/apps/${id}/header.jpg`;
+
           const card = document.createElement('div');
           card.className = 'card animate__fadeInUp';
-          card.style.animationDelay = `${idx*0.1}s`;
+          card.style.animationDelay = `${idx * 0.1}s`;
           card.innerHTML = `
             <div class="img-container">
               <img src="${imgUrl}" alt="${name}"
@@ -200,11 +219,12 @@
           container.appendChild(card);
         });
       } catch (e) {
-        console.error(e);
+        console.error('Ошибка в fetchGames:', e);
         document.getElementById('loading').classList.add('hidden');
         document.getElementById('error').classList.remove('hidden');
       }
     }
+
     document.addEventListener('DOMContentLoaded', fetchGames);
   </script>
 </body>
