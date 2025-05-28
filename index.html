@@ -26,91 +26,92 @@
       background: #1f2937;
       border: 1px solid rgba(59, 130, 246, 0.2);
       transition: transform 0.3s ease, box-shadow 0.3s ease;
+      min-width: 250px;
     }
     .card:hover {
       transform: translateY(-5px);
       box-shadow: 0 10px 20px rgba(0,0,0,0.3);
     }
-    .discount-badge {
-      background: linear-gradient(to right, #22c55e, #16a34a);
-      box-shadow: 0 0 5px rgba(34,197,94,0.5);
+    .discount-100 { background: linear-gradient(to right, #22c55e, #16a34a); }
+    .discount-90 { background: linear-gradient(to right, #3b82f6, #2563eb); }
+    .discount-75 { background: linear-gradient(to right, #a855f7, #9333ea); }
+    .discount-50 { background: linear-gradient(to right, #f59e0b, #d97706); }
+    .horizontal-scroll {
+      display: flex;
+      overflow-x: auto;
+      gap: 1rem;
+      padding-bottom: 1rem;
     }
-    .steam-btn {
-      background: linear-gradient(to right, #3b82f6, #2563eb);
+    .horizontal-scroll::-webkit-scrollbar {
+      height: 6px;
     }
-    .steam-btn:hover {
-      background: linear-gradient(to right, #2563eb, #1d4ed8);
+    .horizontal-scroll::-webkit-scrollbar-thumb {
+      background: #3b82f6;
+      border-radius: 3px;
     }
   </style>
 </head>
 <body class="min-h-screen p-4">
   <div class="max-w-7xl mx-auto">
-    <!-- Заголовок и статистика -->
+    <!-- Заголовок -->
     <div class="text-center mb-8">
       <h1 class="text-4xl md:text-6xl font-bold mb-2 text-white">SteamFreeGames</h1>
       <p class="text-lg text-gray-300">Бесплатные игры и скидки в Steam</p>
-      <p class="text-md mt-4 text-white">Всего найдено: <span id="total-count">0</span></p>
     </div>
 
-    <!-- Фильтры и поиск -->
+    <!-- Поиск -->
     <div class="bg-gray-800 p-4 rounded-lg mb-6">
-      <div class="flex flex-wrap gap-4">
-        <input 
-          type="text" 
-          id="search-input" 
-          placeholder="Поиск по названию..." 
-          class="flex-1 px-4 py-2 bg-gray-700 rounded-lg text-white"
-        >
-        <select id="filter-type" class="px-4 py-2 bg-gray-700 rounded-lg text-white">
-          <option value="all">Все типы</option>
-          <option value="game">Только игры</option>
-          <option value="dlc">Только DLC</option>
-        </select>
-        <select id="filter-discount" class="px-4 py-2 bg-gray-700 rounded-lg text-white">
-          <option value="100">Скидка 100%</option>
-          <option value="90">Скидка 90%+</option>
-          <option value="75">Скидка 75%+</option>
-          <option value="50">Скидка 50%+</option>
-        </select>
-      </div>
+      <input 
+        type="text" 
+        id="search-input" 
+        placeholder="Поиск по названию..." 
+        class="w-full px-4 py-2 bg-gray-700 rounded-lg text-white"
+      >
     </div>
 
-    <!-- Пагинация -->
-    <div class="flex justify-between items-center mb-4">
-      <button id="prev-page" class="px-4 py-2 bg-blue-600 rounded-lg text-white disabled:opacity-50">Назад</button>
-      <span id="page-info" class="text-white">Страница 1</span>
-      <button id="next-page" class="px-4 py-2 bg-blue-600 rounded-lg text-white disabled:opacity-50">Вперёд</button>
+    <!-- Фильтр по скидке -->
+    <div class="flex gap-4 mb-6">
+      <select id="filter-discount" class="px-4 py-2 bg-gray-700 rounded-lg text-white">
+        <option value="all">Все скидки</option>
+        <option value="100">100% (бесплатно)</option>
+        <option value="90">90%+</option>
+        <option value="75">75%+</option>
+        <option value="50">50%+</option>
+      </select>
     </div>
+
+    <!-- Блок с 100% скидками -->
+    <h2 class="text-2xl font-bold text-white mb-4">Бесплатно сейчас (100% скидка)</h2>
+    <div id="free-games-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12"></div>
+
+    <!-- Блок с остальными скидками -->
+    <h2 class="text-2xl font-bold text-white mb-4">Другие скидки</h2>
+    <div id="discounted-games-container" class="horizontal-scroll"></div>
 
     <!-- Загрузка и ошибки -->
     <div id="loading" class="flex justify-center my-8"><div class="loading-spinner"></div></div>
     <div id="error" class="hidden text-center bg-red-600 p-4 rounded-lg mb-4">Ошибка загрузки данных!</div>
     <div id="no-games" class="hidden text-center text-gray-300 p-4">Нет подходящих игр.</div>
-
-    <!-- Контейнер для игр -->
-    <div id="games-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-
-    <!-- Пагинация (дублируется внизу) -->
-    <div class="flex justify-between items-center mt-6">
-      <button id="prev-page-bottom" class="px-4 py-2 bg-blue-600 rounded-lg text-white disabled:opacity-50">Назад</button>
-      <span id="page-info-bottom" class="text-white">Страница 1</span>
-      <button id="next-page-bottom" class="px-4 py-2 bg-blue-600 rounded-lg text-white disabled:opacity-50">Вперёд</button>
-    </div>
   </div>
 
   <script>
     let allGames = [];
-    let currentPage = 1;
-    const gamesPerPage = 50;
+    let freeGames = [];
+    let discountedGames = [];
 
     // Загрузка данных
     async function fetchGames() {
       try {
+        document.getElementById('loading').classList.remove('hidden');
         const resp = await fetch('https://raw.githubusercontent.com/BALCETUL/SteamFreeGames/main/free_goods_detail.json', { cache: 'no-store' });
         if (!resp.ok) throw new Error('Ошибка загрузки');
         const data = await resp.json();
         allGames = data.free_list || [];
-        document.getElementById('total-count').textContent = allGames.length;
+        
+        // Разделяем на бесплатные и остальные (заглушка — в реальном API нужно получать скидки)
+        freeGames = allGames.filter((game, index) => index < 10); // Первые 10 как "бесплатные"
+        discountedGames = allGames.filter((game, index) => index >= 10); // Остальные как "скидки"
+        
         renderGames();
       } catch (e) {
         console.error(e);
@@ -119,42 +120,29 @@
       }
     }
 
-    // Фильтрация и рендеринг игр
+    // Отрисовка игр
     function renderGames() {
       const searchQuery = document.getElementById('search-input').value.toLowerCase();
-      const filterType = document.getElementById('filter-type').value;
-      const filterDiscount = parseInt(document.getElementById('filter-discount').value);
+      const filterDiscount = document.getElementById('filter-discount').value;
 
       // Фильтрация
-      const filteredGames = allGames.filter(([name, link]) => {
-        const isGame = link.includes('/app/');
-        const isDLC = link.includes('/sub/');
-        const matchesSearch = name.toLowerCase().includes(searchQuery);
-        let matchesType = true;
-        let matchesDiscount = true;
+      const filteredFreeGames = freeGames.filter(([name]) => 
+        name.toLowerCase().includes(searchQuery)
+      );
+      
+      const filteredDiscountedGames = discountedGames.filter(([name]) => 
+        name.toLowerCase().includes(searchQuery) &&
+        (filterDiscount === 'all' || filterDiscount === '100') // Заглушка (в реальном API нужно проверять скидку)
+      );
 
-        if (filterType === 'game') matchesType = isGame;
-        if (filterType === 'dlc') matchesType = isDLC;
-        // Предполагаем, что все игры в списке имеют 100% скидку (можно доработать)
-        if (filterDiscount < 100) matchesDiscount = false; // Заглушка
-
-        return matchesSearch && matchesType && matchesDiscount;
-      });
-
-      // Пагинация
-      const totalPages = Math.ceil(filteredGames.length / gamesPerPage);
-      const startIdx = (currentPage - 1) * gamesPerPage;
-      const paginatedGames = filteredGames.slice(startIdx, startIdx + gamesPerPage);
-
-      // Отрисовка
-      const container = document.getElementById('games-container');
-      container.innerHTML = '';
-
-      if (paginatedGames.length === 0) {
-        document.getElementById('no-games').classList.remove('hidden');
+      // Отрисовка бесплатных игр (грид)
+      const freeContainer = document.getElementById('free-games-container');
+      freeContainer.innerHTML = '';
+      
+      if (filteredFreeGames.length === 0) {
+        freeContainer.innerHTML = '<p class="text-gray-400">Нет бесплатных игр.</p>';
       } else {
-        document.getElementById('no-games').classList.add('hidden');
-        paginatedGames.forEach(([name, link], idx) => {
+        filteredFreeGames.forEach(([name, link], idx) => {
           const id = link.includes('/sub/') ? link.match(/\/sub\/(\d+)/)[1] : link.match(/\/app\/(\d+)/)[1];
           const imgUrl = link.includes('/sub/') 
             ? `https://steamcdn-a.akamaihd.net/steam/subs/${id}/header.jpg` 
@@ -166,40 +154,55 @@
           card.innerHTML = `
             <div class="relative">
               <img src="${imgUrl}" alt="${name}" class="w-full h-48 object-cover" onerror="this.src='https://via.placeholder.com/460x215?text=Нет+изображения'">
-              <span class="discount-badge absolute top-2 right-2 px-2 py-1 rounded-md text-sm font-bold">100%</span>
+              <span class="discount-100 absolute top-2 right-2 px-2 py-1 rounded-md text-sm font-bold">100%</span>
             </div>
             <div class="p-4">
               <h3 class="text-xl font-semibold text-white mb-2 truncate">${name}</h3>
-              <a href="${link}" target="_blank" class="steam-btn inline-block px-4 py-2 rounded-md text-white font-medium">Получить</a>
+              <a href="${link}" target="_blank" class="inline-block px-4 py-2 bg-blue-600 rounded-md text-white font-medium">Получить</a>
             </div>
           `;
-          container.appendChild(card);
+          freeContainer.appendChild(card);
         });
       }
 
-      // Обновление пагинации
-      document.getElementById('page-info').textContent = `Страница ${currentPage} из ${totalPages}`;
-      document.getElementById('page-info-bottom').textContent = `Страница ${currentPage} из ${totalPages}`;
-      document.getElementById('prev-page').disabled = currentPage === 1;
-      document.getElementById('next-page').disabled = currentPage === totalPages;
-      document.getElementById('prev-page-bottom').disabled = currentPage === 1;
-      document.getElementById('next-page-bottom').disabled = currentPage === totalPages;
+      // Отрисовка остальных скидок (горизонтальный скролл)
+      const discountedContainer = document.getElementById('discounted-games-container');
+      discountedContainer.innerHTML = '';
+      
+      if (filteredDiscountedGames.length === 0) {
+        discountedContainer.innerHTML = '<p class="text-gray-400">Нет игр со скидками.</p>';
+      } else {
+        filteredDiscountedGames.forEach(([name, link], idx) => {
+          const id = link.includes('/sub/') ? link.match(/\/sub\/(\d+)/)[1] : link.match(/\/app\/(\d+)/)[1];
+          const imgUrl = link.includes('/sub/') 
+            ? `https://steamcdn-a.akamaihd.net/steam/subs/${id}/header.jpg` 
+            : `https://steamcdn-a.akamaihd.net/steam/apps/${id}/header.jpg`;
 
-      // Скрываем загрузку
+          // Рандомная скидка для примера (в реальном API нужно брать из данных)
+          const randomDiscount = [90, 75, 50][Math.floor(Math.random() * 3)];
+          
+          const card = document.createElement('div');
+          card.className = 'card rounded-lg overflow-hidden flex-shrink-0';
+          card.innerHTML = `
+            <div class="relative" style="width: 250px;">
+              <img src="${imgUrl}" alt="${name}" class="w-full h-32 object-cover" onerror="this.src='https://via.placeholder.com/250x120?text=Нет+изображения'">
+              <span class="discount-${randomDiscount} absolute top-2 right-2 px-2 py-1 rounded-md text-sm font-bold">${randomDiscount}%</span>
+            </div>
+            <div class="p-4">
+              <h3 class="text-lg font-semibold text-white mb-2 truncate">${name}</h3>
+              <a href="${link}" target="_blank" class="inline-block px-3 py-1 bg-blue-600 rounded-md text-white text-sm">В Steam</a>
+            </div>
+          `;
+          discountedContainer.appendChild(card);
+        });
+      }
+
       document.getElementById('loading').classList.add('hidden');
     }
 
     // Обработчики событий
-    document.getElementById('search-input').addEventListener('input', () => {
-      currentPage = 1;
-      renderGames();
-    });
-    document.getElementById('filter-type').addEventListener('change', renderGames);
+    document.getElementById('search-input').addEventListener('input', renderGames);
     document.getElementById('filter-discount').addEventListener('change', renderGames);
-    document.getElementById('prev-page').addEventListener('click', () => { currentPage--; renderGames(); });
-    document.getElementById('next-page').addEventListener('click', () => { currentPage++; renderGames(); });
-    document.getElementById('prev-page-bottom').addEventListener('click', () => { currentPage--; renderGames(); });
-    document.getElementById('next-page-bottom').addEventListener('click', () => { currentPage++; renderGames(); });
 
     // Запуск при загрузке
     document.addEventListener('DOMContentLoaded', fetchGames);
