@@ -1,77 +1,83 @@
-from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
 import requests
-import datetime
-import queue
-import time
+from bs4 import BeautifulSoup
 import json
-import pytz
-import bs4
+from datetime import datetime
+from pathlib import Path
+import time
 
-API_URL_TEMPLATE = "https://store.steampowered.com/search/results/?query&start={pos}&count=100&infinite=1"
-THREAD_CNT = 8
+# URL для поиска игр со скидкой 100% (бесплатно)
+SEARCH_URL = (
+    'https://store.steampowered.com/search/results/'
+    '?query&start=0&count=50&filter=globaltopsellers&discount_range=100&infinite=1'
+)
+# Заголовки для обхода ограничений
+HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                  'AppleWebKit/537.36 (KHTML, like Gecko) '
+                  'Chrome/90.0.4430.212 Safari/537.36'
+}
+JSON_PATH = Path('free_goods_detail.json')
 
-free_list = queue.Queue()
 
-def fetch_Steam_json_response(url):
-    while True:
-        try:
-            with requests.get(url, timeout=5) as response:
-                return response.json()
-        except Exception:
-            time.sleep(10)
+def fetch_free_games():
+    """
+    Делает запрос к Steam Search API, парсит HTML-результат и собирает
+    список игр/DLC со скидкой 100%.
+    """
+    resp = requests.get(SEARCH_URL, headers=HEADERS)
+    resp.raise_for_status()
+    data = resp.json()
+    html = data.get('results_html', '')
+    soup = BeautifulSoup(html, 'html.parser')
+    free_list = []
+
+    for idx, row in enumerate(soup.select('a.search_result_row')):
+        # Иконка скидки
+        disc = row.select_one('.search_discount span')
+        if not disc or disc.get_text(strip=True) != '-100%':
             continue
+        # Название
+        name_tag = row.select_one('.search_name span')
+        title = name_tag.get_text(strip=True) if name_tag else 'Без названия'
+        # Ссылка на игру или DLC
+        link = row.get('href', '')
+        free_list.append([title, link])
+    return free_list
 
-def get_free_goods(start, append_list=False):
-    global free_list
-    retry_time = 3
-    while retry_time >= 0:
-        response_json = fetch_Steam_json_response(API_URL_TEMPLATE.format(pos=start))
-        try:
-            goods_count = response_json["total_count"]
-            goods_html = response_json["results_html"]
-            page_parser = bs4.BeautifulSoup(goods_html, "html.parser")
-            full_discounts_div = page_parser.find_all(
-                name="div",
-                attrs={"class":"search_discount_block", "data-discount":"100"}
-            )
-            sub_free_list = [
-                [
-                    div.parent.parent.parent.parent
-                       .find(name="span", attrs={"class":"title"})
-                       .get_text(),
-                    div.parent.parent.parent.parent.get("href"),
-                ]
-                for div in full_discounts_div
-            ]
-            if append_list:
-                for sub_free in sub_free_list:
-                    free_list.put(sub_free)
-            return goods_count
-        except Exception as e:
-            retry_time -= 1
 
-    return 0
+def main():
+    # Время обновления
+    now = datetime.utcnow()  # UTC
+    # Переводим в UTC+3
+    now = now + time.timedelta(hours=3)
+    now_str = now.strftime('%Y-%m-%d %H:%M:%S')
 
-if __name__ == "__main__":
-    total_count = get_free_goods(0)
-    threads = ThreadPoolExecutor(max_workers=THREAD_CNT)
-    futures = [threads.submit(get_free_goods, idx, True)
-               for idx in range(0, total_count, 100)]
-    wait(futures, return_when=ALL_COMPLETED)
+    # Получаем список бесплатных игр
+    free_list = fetch_free_games()
 
-    final_free_list = []
-    free_names = set()
-    while not free_list.empty():
-        name, url = free_list.get()
-        if name not in free_names:
-            free_names.add(name)
-            final_free_list.append([name, url])
+    # Загружаем предыдущий JSON, чтобы достать историю
+    if JSON_PATH.exists():
+        old_data = json.loads(JSON_PATH.read_text(encoding='utf-8'))
+        history = old_data.get('update_history', [])
+    else:
+        history = []
 
-    with open("free_goods_detail.json", "w") as fp:
-        json.dump({
-            "total_count": len(final_free_list),
-            "free_list": final_free_list,
-            "update_time": datetime.datetime.now(
-                tz=pytz.timezone("Europe/Kiev")
-            ).strftime('%Y-%m-%d %H:%M:%S')
-        }, fp)
+    # Добавляем новое время в начало и обрезаем до 10
+    history.insert(0, now_str)
+    history = history[:10]
+
+    # Собираем новый словарь для сохранения
+    result = {
+        'total_count': len(free_list),
+        'free_list': free_list,
+        'update_time': now_str,
+        'update_history': history,
+    }
+
+    # Сохраняем JSON
+    JSON_PATH.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
+    print(f"Обновлено: {now_str}. Найдено игр: {len(free_list)}")
+
+
+if __name__ == '__main__':
+    main()
