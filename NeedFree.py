@@ -51,10 +51,6 @@ def get_free_goods(start, append_list=False):
     return 0
 
 def get_promo_dates(appid=None, subid=None, lang='ru'):
-    """
-    Вернёт (start_ts, end_ts) для акции Free To Keep или (None, None), 
-    если промо нет.
-    """
     if appid:
         url = f"https://store.steampowered.com/api/appdetails?appids={appid}&l={lang}"
         key = str(appid)
@@ -67,7 +63,7 @@ def get_promo_dates(appid=None, subid=None, lang='ru'):
             data = resp.get(key, {}).get('data', {})
             promos = data.get('promotions', {}).get('promotional_events', [])
             for ev in promos:
-                if ev.get('type') == 0:  # Free To Keep
+                if ev.get('type') == 0:
                     sd = ev['start_date'].get('initial')
                     ed = ev['end_date'].get('initial')
                     return sd, ed
@@ -77,14 +73,12 @@ def get_promo_dates(appid=None, subid=None, lang='ru'):
     return None, None
 
 if __name__ == "__main__":
-    # Собираем список всех бесплатных товаров
     total_count = get_free_goods(0)
     threads = ThreadPoolExecutor(max_workers=THREAD_CNT)
     futures = [threads.submit(get_free_goods, idx, True)
                for idx in range(0, total_count, 100)]
     wait(futures, return_when=ALL_COMPLETED)
 
-    # Убираем дубликаты
     final_free_list = []
     free_names = set()
     while not free_list.empty():
@@ -93,7 +87,6 @@ if __name__ == "__main__":
             free_names.add(name)
             final_free_list.append([name, url])
 
-    # Получаем даты начала и окончания каждой раздачи
     detailed = []
     for name, link in final_free_list:
         if '/sub/' in link:
@@ -114,7 +107,6 @@ if __name__ == "__main__":
             "expires": fmt(end_ts)
         })
 
-    # Сохраняем результат
     with open("free_goods_detail.json", "w", encoding="utf-8") as fp:
         json.dump({
             "total_count": len(detailed),
