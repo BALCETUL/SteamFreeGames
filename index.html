@@ -43,9 +43,7 @@
       transform: translateY(-5px);
       box-shadow: 0 10px 20px rgba(0,0,0,0.3);
     }
-    .img-container {
-      position: relative;
-    }
+    .img-container { position: relative; }
     .game-img {
       width: 100%;
       aspect-ratio: 460/215;
@@ -78,6 +76,7 @@
       background: linear-gradient(to right, #2563eb, #1d4ed8);
       box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
     }
+
     .update-box {
       position: absolute;
       top: 1rem;
@@ -115,7 +114,7 @@
       transform: translateY(-5px);
       transition: opacity 0.2s ease, transform 0.2s ease;
       pointer-events: none;
-      z-index: 20;
+      z-index: 999; /* подняли поверх всего */
     }
     .update-box:hover .tooltip {
       opacity: 1;
@@ -136,12 +135,12 @@
       max-width: 240px;
       font-size: .75rem;
       line-height: 1.2;
+      z-index: 10; /* пониже, чем подсказка */
     }
   </style>
 </head>
 <body class="min-h-screen flex flex-col items-center p-4 relative">
 
-  <!-- Существующий update-box -->
   <div class="update-box animate__animated animate__fadeIn" style="animation-delay: 0.5s;">
     <svg class="update-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -154,15 +153,13 @@
     </div>
   </div>
 
-  <!-- НОВЫЙ блок истории -->
   <div class="update-history-box animate__animated animate__fadeInDown" style="animation-delay: 0.6s;">
     <h4 class="text-sm font-medium mb-1 text-gray-300">История обновлений</h4>
     <ul id="update-history" class="text-xs list-disc list-inside text-gray-400 space-y-0.5">
-      <!-- JavaScript заполнит здесь <li> -->
+      <!-- JS заполнит элементы -->
     </ul>
   </div>
 
-  <!-- остальной ваш HTML… -->
   <div class="w-full text-center mb-8 mt-12">
     <h1 class="text-4xl md:text-6xl font-bold mb-2 animate__fadeIn text-white">SteamFreeGames</h1>
     <p class="text-lg text-gray-300 animate__fadeIn" style="animation-delay: 0.2s;">
