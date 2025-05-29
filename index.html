@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SteamFreeGames — Бесплатные предложения Steam</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
   <style>
     body {
       background: linear-gradient(135deg, #1a202c, #2d3748);
@@ -122,6 +123,7 @@
       pointer-events: auto;
     }
 
+    /* Блок истории */
     .update-history-box {
       position: absolute;
       top: 5rem;
@@ -139,42 +141,58 @@
 </head>
 <body class="min-h-screen flex flex-col items-center p-4 relative">
 
+  <!-- Существующий update-box -->
   <div class="update-box animate__animated animate__fadeIn" style="animation-delay: 0.5s;">
     <svg class="update-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
     </svg>
     Обновлено (UTC+3): <span id="update-time">-</span>
     <div class="tooltip">
-      Этот сайт автоматически собирает "ИГР и DLC" со скидкой 100% в Steam.
-      Обновление данных происходит каждый час. (могут быть задержка от сервера)
+      Этот сайт автоматически собирает "ИГР и DLC" со скидкой 100% в Steam.<br>
+      Обновление данных происходит каждый час.<br>
       Скрипт парсит магазин Steam и обновляет список в JSON.
     </div>
   </div>
 
-  <!-- Добавляем историю -->
+  <!-- НОВЫЙ блок истории -->
   <div class="update-history-box animate__animated animate__fadeInDown" style="animation-delay: 0.6s;">
     <h4 class="text-sm font-medium mb-1 text-gray-300">История обновлений</h4>
     <ul id="update-history" class="text-xs list-disc list-inside text-gray-400 space-y-0.5">
-      <!-- JavaScript сюда вставит обновления -->
+      <!-- JavaScript заполнит здесь <li> -->
     </ul>
   </div>
 
+  <!-- остальной ваш HTML… -->
   <div class="w-full text-center mb-8 mt-12">
     <h1 class="text-4xl md:text-6xl font-bold mb-2 animate__fadeIn text-white">SteamFreeGames</h1>
-    <p class="text-lg text-gray-300 animate__fadeIn" style="animation-delay: 0.2s;">Сегодня бесплатные предложения в Steam со 100% скидкой!</p>
-    <p class="text-md mt-4 animate__fadeIn text-white" style="animation-delay: 0.4s;">Бесплатно сейчас: <span id="total-count">0</span></p>
+    <p class="text-lg text-gray-300 animate__fadeIn" style="animation-delay: 0.2s;">
+      Сегодня бесплатные предложения в Steam со 100% скидкой!
+    </p>
+    <p class="text-md mt-4 animate__fadeIn text-white" style="animation-delay: 0.4s;">
+      Бесплатно сейчас: <span id="total-count">0</span>
+    </p>
   </div>
 
-  <div id="loading" class="flex items-center justify-center my-8"><div class="loading-spinner"></div></div>
-  <div id="error" class="text-center hidden"><p class="error-message">Не удалось загрузить список. Попробуйте позже!</p></div>
-  <div id="no-games" class="text-center text-gray-300 hidden"><p class="text-xl">На данный момент нет бесплатных предложений.</p></div>
-
-  <div id="games-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl w-full hidden"></div>
+  <div id="loading" class="flex items-center justify-center my-8">
+    <div class="loading-spinner"></div>
+  </div>
+  <div id="error" class="text-center hidden">
+    <p class="error-message">Не удалось загрузить список. Попробуйте позже!</p>
+  </div>
+  <div id="no-games" class="text-center text-gray-300 hidden">
+    <p class="text-xl">На данный момент нет бесплатных предложений.</p>
+  </div>
+  <div id="games-container"
+       class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl w-full hidden">
+  </div>
 
   <script>
     async function fetchGames() {
       try {
-        const resp = await fetch('https://raw.githubusercontent.com/BALCETUL/SteamFreeGames/main/free_goods_detail.json', { cache: 'no-store' });
+        const resp = await fetch(
+          'https://raw.githubusercontent.com/BALCETUL/SteamFreeGames/main/free_goods_detail.json',
+          { cache: 'no-store' }
+        );
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
         const data = await resp.json();
 
@@ -182,7 +200,7 @@
         document.getElementById('total-count').textContent = data.total_count || 0;
         document.getElementById('update-time').textContent = data.update_time || '-';
 
-        // Обновляем историю
+        // заполняем историю
         const history = data.update_history || [];
         const historyUl = document.getElementById('update-history');
         historyUl.innerHTML = '';
@@ -201,22 +219,19 @@
         const container = document.getElementById('games-container');
         container.classList.remove('hidden');
         list.forEach(([name, link], idx) => {
-          let id = link.includes('/sub/') ?
-            link.match(/\/sub\/(\d+)/)[1] :
-            link.match(/\/app\/(\d+)/)[1];
-          let imgUrl = link.includes('/sub/') ?
-            `https://steamcdn-a.akamaihd.net/steam/subs/${id}/header.jpg` :
-            `https://steamcdn-a.akamaihd.net/steam/apps/${id}/header.jpg`;
+          let id = link.includes('/sub/')
+            ? link.match(/\/sub\/(\d+)/)[1]
+            : link.match(/\/app\/(\d+)/)[1];
+          let imgUrl = link.includes('/sub/')
+            ? `https://steamcdn-a.akamaihd.net/steam/subs/${id}/header.jpg`
+            : `https://steamcdn-a.akamaihd.net/steam/apps/${id}/header.jpg`;
 
           const card = document.createElement('div');
           card.className = 'card animate__animated animate__fadeInUp';
           card.style.animationDelay = `${idx * 0.1}s`;
           card.innerHTML = `
             <div class="img-container">
-              <img src="${imgUrl}"
-                   alt="${name}"
-                   class="game-img"
-                   loading="lazy"
+              <img src="${imgUrl}" alt="${name}" class="game-img" loading="lazy"
                    onerror="this.src='https://via.placeholder.com/460x215?text=Нет+Image'"/>
               <span class="discount-badge">100% скидка</span>
             </div>
