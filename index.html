@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SteamFreeGames — Бесплатные предложения Steam</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
@@ -64,7 +64,6 @@
       opacity: 0.9;
       z-index: 10;
       animation: fadeIn 0.5s ease-out;
-      /* font-size removed for larger default text */
     }
     .steam-btn {
       background: linear-gradient(to right, #3b82f6, #2563eb);
@@ -99,7 +98,6 @@
       height: 1rem;
       fill: #e2e8f0;
     }
-    /* Tooltip styling */
     .update-box .tooltip {
       position: absolute;
       top: 2.8rem;
@@ -108,10 +106,10 @@
       color: #e2e8f0;
       padding: .75rem 1rem;
       border-radius: .5rem;
-      width: 550px;         /* increased width */
-      font-size: .85rem;    /* larger text */
+      width: 550px;
+      font-size: .85rem;
       line-height: 1.4;
-      white-space: pre-line; /* respect line breaks */
+      white-space: pre-line;
       opacity: 0;
       transform: translateY(-5px);
       transition: opacity 0.2s ease, transform 0.2s ease;
@@ -122,6 +120,20 @@
       opacity: 1;
       transform: translateY(0);
       pointer-events: auto;
+    }
+
+    .update-history-box {
+      position: absolute;
+      top: 5rem;
+      right: 1rem;
+      background: rgba(31,41,55,0.8);
+      padding: .75rem 1rem;
+      border-radius: .75rem;
+      border: 1px solid rgba(59,130,246,0.2);
+      box-shadow: 0 0 6px rgba(59,130,246,0.2);
+      max-width: 240px;
+      font-size: .75rem;
+      line-height: 1.2;
     }
   </style>
 </head>
@@ -137,6 +149,14 @@
       Обновление данных происходит каждый час. (могут быть задержка от сервера)
       Скрипт парсит магазин Steam и обновляет список в JSON.
     </div>
+  </div>
+
+  <!-- Добавляем историю -->
+  <div class="update-history-box animate__animated animate__fadeInDown" style="animation-delay: 0.6s;">
+    <h4 class="text-sm font-medium mb-1 text-gray-300">История обновлений</h4>
+    <ul id="update-history" class="text-xs list-disc list-inside text-gray-400 space-y-0.5">
+      <!-- JavaScript сюда вставит обновления -->
+    </ul>
   </div>
 
   <div class="w-full text-center mb-8 mt-12">
@@ -161,6 +181,16 @@
         document.getElementById('loading').classList.add('hidden');
         document.getElementById('total-count').textContent = data.total_count || 0;
         document.getElementById('update-time').textContent = data.update_time || '-';
+
+        // Обновляем историю
+        const history = data.update_history || [];
+        const historyUl = document.getElementById('update-history');
+        historyUl.innerHTML = '';
+        history.forEach(ts => {
+          const li = document.createElement('li');
+          li.textContent = ts;
+          historyUl.appendChild(li);
+        });
 
         const list = data.free_list || [];
         if (!list.length) {
