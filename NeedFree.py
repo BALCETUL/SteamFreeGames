@@ -1,117 +1,83 @@
+
 from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
-import requests
-import datetime
-import queue
-import time
-import json
-import pytz
-import bs4
+import requests, bs4, queue, time, json, datetime, pytz
 
-API_URL_TEMPLATE = "https://store.steampowered.com/search/results/?query&start={pos}&count=100&infinite=1"
-THREAD_CNT = 8
-free_list = queue.Queue()
+API_SEARCH = "https://store.steampowered.com/search/results/?query&start={pos}&count=100&infinite=1"
+THREADS = 8
+Q = queue.Queue()
 
-def fetch_Steam_json_response(url):
-    while True:
+def fetch_json(url, retries=3):
+    for _ in range(retries):
         try:
-            with requests.get(url, timeout=5) as response:
-                return response.json()
-        except Exception:
-            time.sleep(10)
-            continue
+            return requests.get(url, timeout=5).json()
+        except:
+            time.sleep(1)
+    return {}
 
-def get_free_goods(start, append_list=False):
-    global free_list
-    retry_time = 3
-    while retry_time >= 0:
-        response_json = fetch_Steam_json_response(API_URL_TEMPLATE.format(pos=start))
-        try:
-            goods_count = response_json["total_count"]
-            goods_html = response_json["results_html"]
-            page_parser = bs4.BeautifulSoup(goods_html, "html.parser")
-            full_discounts_div = page_parser.find_all(
-                name="div",
-                attrs={"class": "search_discount_block", "data-discount": "100"}
-            )
-            sub_free_list = [
-                [
-                    div.parent.parent.parent.parent
-                       .find(name="span", attrs={"class": "title"})
-                       .get_text(),
-                    div.parent.parent.parent.parent.get("href"),
-                ]
-                for div in full_discounts_div
-            ]
-            if append_list:
-                for sub_free in sub_free_list:
-                    free_list.put(sub_free)
-            return goods_count
-        except Exception:
-            retry_time -= 1
-    return 0
+def get_free_goods_block(start, enqueue=False):
+    resp = fetch_json(API_SEARCH.format(pos=start))
+    html = resp.get("results_html","")
+    soup = bs4.BeautifulSoup(html, "html.parser")
+    blocks = soup.find_all("div", class_="search_result_row", attrs={"data-discount":"100"})
+    items = []
+    for b in blocks:
+        name = b.find("span", class_="title").text.strip()
+        appid = b.get("data-ds-appid")
+        subid = b.get("data-ds-packageid") or b.get("data-subid")
+        link = b.get("href")
+        items.append((name, appid, subid, link))
+    if enqueue:
+        for it in items:
+            Q.put(it)
+    return resp.get("total_count",0)
 
-def get_promo_dates(appid=None, subid=None, lang='ru'):
-    if appid:
-        url = f"https://store.steampowered.com/api/appdetails?appids={appid}&l={lang}"
-        key = str(appid)
-    else:
+def get_promos(appid=None, subid=None, lang="ru"):
+    if subid:
         url = f"https://store.steampowered.com/api/packagedetails?packageids={subid}&l={lang}"
         key = str(subid)
-    for _ in range(3):
-        try:
-            resp = requests.get(url, timeout=5).json()
-            data = resp.get(key, {}).get('data', {})
-            promos = data.get('promotions', {}).get('promotional_events', [])
-            for ev in promos:
-                if ev.get('type') == 0:
-                    sd = ev['start_date'].get('initial')
-                    ed = ev['end_date'].get('initial')
-                    return sd, ed
-            return None, None
-        except Exception:
-            time.sleep(1)
-    return None, None
+    else:
+        url = f"https://store.steampowered.com/api/appdetails?appids={appid}&l={lang}"
+        key = str(appid)
+    data = fetch_json(url).get(key,{}).get("data",{})
+    events = data.get("promotions",{}).get("promotional_events",[])
+    out = {"started":None,"expires":None,"weekend_start":None,"weekend_end":None,"promo_type":None}
+    for ev in events:
+        t = ev.get("type")
+        sd = ev["start_date"].get("initial")
+        ed = ev["end_date"].get("initial")
+        if t==0:
+            out["started"], out["expires"], out["promo_type"] = sd, ed, 0
+        elif t==3:
+            out["weekend_start"], out["weekend_end"], out["promo_type"] = sd, ed, 3
+    return out
 
-if __name__ == "__main__":
-    total_count = get_free_goods(0)
-    threads = ThreadPoolExecutor(max_workers=THREAD_CNT)
-    futures = [threads.submit(get_free_goods, idx, True)
-               for idx in range(0, total_count, 100)]
-    wait(futures, return_when=ALL_COMPLETED)
+if __name__=="__main__":
+    total = get_free_goods_block(0)
+    with ThreadPoolExecutor(THREADS) as pool:
+        futures = [pool.submit(get_free_goods_block, i, True) for i in range(0, total, 100)]
+        wait(futures, return_when=ALL_COMPLETED)
 
-    final_free_list = []
-    free_names = set()
-    while not free_list.empty():
-        name, url = free_list.get()
-        if name not in free_names:
-            free_names.add(name)
-            final_free_list.append([name, url])
-
-    detailed = []
-    for name, link in final_free_list:
-        if '/sub/' in link:
-            subid = link.split('/sub/')[1].strip('/').split('/')[0]
-            start_ts, end_ts = get_promo_dates(subid=subid)
-        else:
-            appid = link.split('/app/')[1].strip('/').split('/')[0]
-            start_ts, end_ts = get_promo_dates(appid=appid)
-
-        fmt = lambda ts: datetime.datetime.fromtimestamp(
-            ts, tz=pytz.timezone("Europe/Kiev")
-        ).strftime("%Y-%m-%d %H:%M:%S") if ts else None
-
+    seen = set(); detailed=[]
+    while not Q.empty():
+        name, appid, subid, link = Q.get()
+        key = subid or appid
+        if key in seen: continue
+        seen.add(key)
+        promos = get_promos(appid=appid, subid=subid)
+        fmt = lambda ts: datetime.datetime.fromtimestamp(ts, tz=pytz.timezone("Europe/Kiev")).strftime("%Y-%m-%d %H:%M:%S") if ts else None
         detailed.append({
             "name": name,
             "link": link,
-            "started": fmt(start_ts),
-            "expires": fmt(end_ts)
+            "promo_type": promos["promo_type"],
+            "started": fmt(promos["started"]),
+            "expires": fmt(promos["expires"]),
+            "weekend_start": fmt(promos["weekend_start"]),
+            "weekend_end": fmt(promos["weekend_end"]),
         })
 
-    with open("free_goods_detail.json", "w", encoding="utf-8") as fp:
+    with open("free_goods_detail.json","w",encoding="utf-8") as f:
         json.dump({
             "total_count": len(detailed),
             "free_list": detailed,
-            "update_time": datetime.datetime.now(
-                tz=pytz.timezone("Europe/Kiev")
-            ).strftime('%Y-%m-%d %H:%M:%S')
-        }, fp, ensure_ascii=False, indent=2)
+            "update_time": datetime.datetime.now(tz=pytz.timezone("Europe/Kiev")).strftime("%Y-%m-%d %H:%M:%S")
+        }, f, ensure_ascii=False, indent=2)
