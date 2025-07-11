@@ -1,4 +1,4 @@
-name: Улучшенный Steam Crawler
+name: Crawler runner
 
 on:
   schedule:
@@ -6,16 +6,14 @@ on:
   workflow_dispatch:       # кнопка для ручного запуска
 
 jobs:
-  steam-parser:
+  build:
     runs-on: ubuntu-latest
-    timeout-minutes: 15    # ограничиваем время выполнения
+    timeout-minutes: 15
     
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v4
@@ -33,7 +31,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           
       - name: Backup previous results
         run: |
@@ -44,7 +42,7 @@ jobs:
             echo "Предыдущих результатов нет"
           fi
           
-      - name: Run improved Steam parser
+      - name: Run crawler with retry mechanism
         run: |
           echo "Запуск улучшенного парсера Steam..."
           
@@ -88,7 +86,7 @@ jobs:
             fi
           fi
           
-      - name: Validate and analyze results
+      - name: Validate results
         run: |
           echo "Проверка результатов..."
           
@@ -139,7 +137,7 @@ jobs:
           
           # Проверяем на аномально малое количество
           if current_count < 3:
-              print(f'⚠️  ВНИМАНИЕ: Найдено очень мало игр ({current_count})')
+              print(f'⚠️ ВНИМАНИЕ: Найдено очень мало игр ({current_count})')
               print('Возможно, есть проблема с парсингом')
           
           # Показываем статистику если есть
@@ -193,7 +191,7 @@ jobs:
           if previous_count > 0:
               change_percent = abs(current_count - previous_count) / previous_count * 100
               if change_percent > 50:
-                  print(f'⚠️  ВНИМАНИЕ: Значительное изменение количества игр!')
+                  print(f'⚠️ ВНИМАНИЕ: Значительное изменение количества игр!')
                   print(f'Было: {previous_count}, стало: {current_count}')
                   print(f'Изменение: {change_percent:.1f}%')
                   
@@ -204,7 +202,7 @@ jobs:
                       shutil.copy('free_goods_detail_backup.json', 'free_goods_detail.json')
           "
           
-      - name: Update repository
+      - name: Update free details json
         run: |
           # Настраиваем git
           git config --global user.name 'BALCETUL'
@@ -224,22 +222,43 @@ jobs:
               git add parser_stats.json
             fi
             
-            # Создаем коммит с детальной информацией
-            commit_message="🎮 Автообновление списка бесплатных игр Steam
-
-$(python -c "
-import json
-try:
-    with open('free_goods_detail.json', 'r', encoding='utf-8') as f:
-        data = json.load(f)
-        print(f'📊 Найдено игр: {data.get(\"total_count\", 0)}')
-        print(f'⏰ Время: {data.get(\"update_time\", \"неизвестно\")}')
-        print(f'🔧 Версия: {data.get(\"parser_version\", \"неизвестно\")}')
-except:
-    print('Обновление данных')
-")"
+            # Получаем статистику для коммита
+            GAME_COUNT=$(python -c "
+            import json
+            try:
+                with open('free_goods_detail.json', 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    print(data.get('total_count', 0))
+            except:
+                print('0')
+            ")
             
-            git commit -m "$commit_message"
+            UPDATE_TIME=$(python -c "
+            import json
+            try:
+                with open('free_goods_detail.json', 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    print(data.get('update_time', 'неизвестно'))
+            except:
+                print('неизвестно')
+            ")
+            
+            PARSER_VERSION=$(python -c "
+            import json
+            try:
+                with open('free_goods_detail.json', 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    print(data.get('parser_version', 'неизвестно'))
+            except:
+                print('неизвестно')
+            ")
+            
+            # Создаем коммит с информацией
+            git commit -m "🎮 Автообновление списка бесплатных игр Steam
+
+📊 Найдено игр: $GAME_COUNT
+⏰ Время: $UPDATE_TIME
+🔧 Версия: $PARSER_VERSION"
             
             # Пушим изменения с retry
             for i in {1..3}; do
@@ -260,7 +279,7 @@ except:
             done
           fi
 
-      - name: Upload logs and stats
+      - name: Upload logs as artifact
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -269,15 +288,7 @@ except:
             steam_parser.log
             parser_stats.json
             free_goods_detail_backup.json
-          retention-days: 30
-          
-      - name: Cleanup old artifacts
-        run: |
-          echo "🧹 Очистка временных файлов..."
-          if [ -f "free_goods_detail_backup.json" ]; then
-            rm -f free_goods_detail_backup.json
-            echo "Удалена резервная копия"
-          fi
+          retention-days: 7
           
       - name: Summary
         if: always()
