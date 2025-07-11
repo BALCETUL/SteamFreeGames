@@ -1,77 +1,258 @@
-from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
 import datetime
-import queue
 import time
 import json
 import pytz
 import bs4
+import logging
+import threading
+from typing import List, Tuple, Set
+from urllib.parse import urljoin, urlparse
+import random
+
+# Настройка логирования
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('steam_parser.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
 API_URL_TEMPLATE = "https://store.steampowered.com/search/results/?query&start={pos}&count=100&infinite=1"
-THREAD_CNT = 8
+THREAD_CNT = 4  # Уменьшили количество потоков для большей стабильности
 
-free_list = queue.Queue()
-
-def fetch_Steam_json_response(url):
-    while True:
+class SteamParser:
+    def __init__(self):
+        self.session = requests.Session()
+        self.session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        })
+        self.free_games = []
+        self.processed_ids = set()
+        self.lock = threading.Lock()
+        
+    def fetch_steam_json_response(self, url: str, max_retries: int = 5) -> dict:
+        """Получить JSON ответ от Steam API с повторными попытками"""
+        for attempt in range(max_retries):
+            try:
+                # Добавляем случайную задержку для избежания rate limiting
+                time.sleep(random.uniform(0.1, 0.5))
+                
+                with self.session.get(url, timeout=10) as response:
+                    response.raise_for_status()
+                    data = response.json()
+                    
+                    # Проверяем что ответ валидный
+                    if 'total_count' in data and 'results_html' in data:
+                        return data
+                    else:
+                        logger.warning(f"Неполный ответ от Steam API на попытке {attempt + 1}")
+                        
+            except requests.exceptions.RequestException as e:
+                logger.warning(f"Ошибка запроса на попытке {attempt + 1}: {e}")
+                if attempt < max_retries - 1:
+                    # Экспоненциальный backoff
+                    sleep_time = (2 ** attempt) + random.uniform(0, 1)
+                    time.sleep(sleep_time)
+                else:
+                    logger.error(f"Все попытки исчерпаны для URL: {url}")
+                    
+            except (json.JSONDecodeError, KeyError) as e:
+                logger.warning(f"Ошибка парсинга JSON на попытке {attempt + 1}: {e}")
+                if attempt < max_retries - 1:
+                    time.sleep(1)
+                    
+        return {}
+    
+    def extract_game_id(self, url: str) -> str:
+        """Извлечь ID игры из URL для дедупликации"""
         try:
-            with requests.get(url, timeout=5) as response:
-                return response.json()
-        except Exception:
-            time.sleep(10)
-            continue
-
-def get_free_goods(start, append_list=False):
-    global free_list
-    retry_time = 3
-    while retry_time >= 0:
-        response_json = fetch_Steam_json_response(API_URL_TEMPLATE.format(pos=start))
+            if '/app/' in url:
+                return url.split('/app/')[1].split('/')[0]
+            elif '/sub/' in url:
+                return 'sub_' + url.split('/sub/')[1].split('/')[0]
+            elif '/bundle/' in url:
+                return 'bundle_' + url.split('/bundle/')[1].split('/')[0]
+            else:
+                return url
+        except:
+            return url
+    
+    def parse_free_games_from_html(self, html: str) -> List[Tuple[str, str]]:
+        """Парсить HTML для поиска бесплатных игр со 100% скидкой"""
         try:
-            goods_count = response_json["total_count"]
-            goods_html = response_json["results_html"]
-            page_parser = bs4.BeautifulSoup(goods_html, "html.parser")
-            full_discounts_div = page_parser.find_all(
+            page_parser = bs4.BeautifulSoup(html, "html.parser")
+            
+            # Ищем все элементы со 100% скидкой
+            discount_elements = page_parser.find_all(
                 name="div",
-                attrs={"class":"search_discount_block", "data-discount":"100"}
+                attrs={"class": "search_discount_block", "data-discount": "100"}
             )
-            sub_free_list = [
-                [
-                    div.parent.parent.parent.parent
-                       .find(name="span", attrs={"class":"title"})
-                       .get_text(),
-                    div.parent.parent.parent.parent.get("href"),
-                ]
-                for div in full_discounts_div
-            ]
-            if append_list:
-                for sub_free in sub_free_list:
-                    free_list.put(sub_free)
-            return goods_count
+            
+            games = []
+            for div in discount_elements:
+                try:
+                    # Находим родительский элемент с информацией об игре
+                    game_container = div.parent.parent.parent.parent
+                    
+                    # Извлекаем название игры
+                    title_element = game_container.find(name="span", attrs={"class": "title"})
+                    if not title_element:
+                        continue
+                        
+                    title = title_element.get_text().strip()
+                    url = game_container.get("href", "")
+                    
+                    if title and url:
+                        games.append((title, url))
+                        
+                except Exception as e:
+                    logger.warning(f"Ошибка при парсинге элемента игры: {e}")
+                    continue
+                    
+            return games
+            
         except Exception as e:
-            retry_time -= 1
+            logger.error(f"Ошибка при парсинге HTML: {e}")
+            return []
+    
+    def get_free_games_batch(self, start_pos: int) -> int:
+        """Получить батч бесплатных игр начиная с позиции start_pos"""
+        url = API_URL_TEMPLATE.format(pos=start_pos)
+        logger.info(f"Обрабатываем позицию {start_pos}")
+        
+        response_data = self.fetch_steam_json_response(url)
+        if not response_data:
+            logger.error(f"Не удалось получить данные для позиции {start_pos}")
+            return 0
+            
+        try:
+            total_count = response_data.get("total_count", 0)
+            html = response_data.get("results_html", "")
+            
+            if not html:
+                logger.warning(f"Пустой HTML для позиции {start_pos}")
+                return total_count
+                
+            games = self.parse_free_games_from_html(html)
+            
+            # Добавляем игры в общий список с проверкой дубликатов
+            with self.lock:
+                for title, url in games:
+                    game_id = self.extract_game_id(url)
+                    if game_id not in self.processed_ids:
+                        self.processed_ids.add(game_id)
+                        self.free_games.append((title, url))
+                        logger.info(f"Найдена игра: {title}")
+                        
+            return total_count
+            
+        except Exception as e:
+            logger.error(f"Ошибка при обработке батча {start_pos}: {e}")
+            return 0
+    
+    def get_all_free_games(self) -> List[Tuple[str, str]]:
+        """Получить все бесплатные игры со 100% скидкой"""
+        logger.info("Начинаем поиск бесплатных игр в Steam")
+        
+        # Сначала получаем общее количество результатов
+        total_count = self.get_free_games_batch(0)
+        if total_count == 0:
+            logger.error("Не удалось получить общее количество игр")
+            return []
+            
+        logger.info(f"Общее количество игр для проверки: {total_count}")
+        
+        # Создаем список позиций для обработки
+        positions = list(range(0, total_count, 100))
+        
+        # Обрабатываем остальные позиции в многопоточном режиме
+        if len(positions) > 1:
+            with ThreadPoolExecutor(max_workers=THREAD_CNT) as executor:
+                # Пропускаем позицию 0, так как уже обработали
+                future_to_pos = {
+                    executor.submit(self.get_free_games_batch, pos): pos 
+                    for pos in positions[1:]
+                }
+                
+                for future in as_completed(future_to_pos):
+                    pos = future_to_pos[future]
+                    try:
+                        future.result()
+                        logger.info(f"Завершена обработка позиции {pos}")
+                    except Exception as e:
+                        logger.error(f"Ошибка при обработке позиции {pos}: {e}")
+        
+        logger.info(f"Найдено уникальных бесплатных игр: {len(self.free_games)}")
+        return self.free_games
+    
+    def validate_results(self, games: List[Tuple[str, str]]) -> List[Tuple[str, str]]:
+        """Валидация результатов"""
+        validated_games = []
+        
+        for title, url in games:
+            # Базовая валидация
+            if not title or not url:
+                continue
+                
+            # Проверяем что URL корректный
+            try:
+                parsed = urlparse(url)
+                if not parsed.scheme or not parsed.netloc:
+                    continue
+            except:
+                continue
+                
+            # Проверяем что это действительно Steam URL
+            if 'steampowered.com' not in url and 'store.steampowered.com' not in url:
+                continue
+                
+            validated_games.append((title, url))
+            
+        return validated_games
+    
+    def save_results(self, games: List[Tuple[str, str]]):
+        """Сохранить результаты в JSON файл"""
+        try:
+            # Валидируем результаты
+            validated_games = self.validate_results(games)
+            
+            # Создаем финальную структуру данных
+            result_data = {
+                "total_count": len(validated_games),
+                "free_list": validated_games,
+                "update_time": datetime.datetime.now(
+                    tz=pytz.timezone("Europe/Kiev")
+                ).strftime('%Y-%m-%d %H:%M:%S')
+            }
+            
+            # Сохраняем в файл
+            with open("free_goods_detail.json", "w", encoding='utf-8') as fp:
+                json.dump(result_data, fp, ensure_ascii=False, indent=2)
+                
+            logger.info(f"Результаты сохранены: {len(validated_games)} игр")
+            
+        except Exception as e:
+            logger.error(f"Ошибка при сохранении результатов: {e}")
+            raise
 
-    return 0
+def main():
+    """Основная функция"""
+    try:
+        parser = SteamParser()
+        free_games = parser.get_all_free_games()
+        parser.save_results(free_games)
+        
+        logger.info("Парсинг завершен успешно!")
+        
+    except Exception as e:
+        logger.error(f"Критическая ошибка: {e}")
+        raise
 
 if __name__ == "__main__":
-    total_count = get_free_goods(0)
-    threads = ThreadPoolExecutor(max_workers=THREAD_CNT)
-    futures = [threads.submit(get_free_goods, idx, True)
-               for idx in range(0, total_count, 100)]
-    wait(futures, return_when=ALL_COMPLETED)
+    main()
 
-    final_free_list = []
-    free_names = set()
-    while not free_list.empty():
-        name, url = free_list.get()
-        if name not in free_names:
-            free_names.add(name)
-            final_free_list.append([name, url])
-
-    with open("free_goods_detail.json", "w") as fp:
-        json.dump({
-            "total_count": len(final_free_list),
-            "free_list": final_free_list,
-            "update_time": datetime.datetime.now(
-                tz=pytz.timezone("Europe/Kiev")
-            ).strftime('%Y-%m-%d %H:%M:%S')
-        }, fp)
