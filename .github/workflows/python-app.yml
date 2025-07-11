@@ -1,72 +1,210 @@
-name: Crawler runner
+name: Улучшенный Steam Crawler
 
 on:
   schedule:
     - cron: '0 * * * *'    # каждый час в 00 минут UTC
-  workflow_dispatch:      # кнопка для ручного запуска
+  workflow_dispatch:       # кнопка для ручного запуска
 
 jobs:
-  build:
+  steam-parser:
     runs-on: ubuntu-latest
+    timeout-minutes: 15    # ограничиваем время выполнения
     
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Полная история для корректной работы git
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v4
         with:
           python-version: "3.11"
 
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install -r requirements.txt
           
-      - name: Run crawler with retry mechanism
+      - name: Backup previous results
         run: |
-          # Пробуем запустить парсер с повторными попытками
+          if [ -f "free_goods_detail.json" ]; then
+            cp free_goods_detail.json free_goods_detail_backup.json
+            echo "Резервная копия создана"
+          else
+            echo "Предыдущих результатов нет"
+          fi
+          
+      - name: Run improved Steam parser
+        run: |
+          echo "Запуск улучшенного парсера Steam..."
+          
+          # Функция для запуска парсера с retry
+          run_parser() {
+            local attempt=$1
+            echo "Попытка $attempt из 3"
+            
+            if timeout 10m python NeedFree.py; then
+              echo "✅ Парсинг успешен на попытке $attempt"
+              return 0
+            else
+              echo "❌ Ошибка на попытке $attempt"
+              return 1
+            fi
+          }
+          
+          # Пробуем запустить парсер до 3 раз
+          success=false
           for i in {1..3}; do
-            echo "Попытка $i из 3"
-            if python NeedFree.py; then
-              echo "Парсинг успешен на попытке $i"
+            if run_parser $i; then
+              success=true
               break
             else
-              echo "Ошибка на попытке $i"
-              if [ $i -eq 3 ]; then
-                echo "Все попытки исчерпаны"
-                exit 1
+              if [ $i -lt 3 ]; then
+                echo "⏰ Ожидание перед следующей попыткой..."
+                sleep 30
               fi
-              sleep 30
             fi
           done
           
-      - name: Validate results
+          if [ "$success" = false ]; then
+            echo "❌ Все попытки парсинга неудачны"
+            # Пытаемся восстановить из резервной копии
+            if [ -f "free_goods_detail_backup.json" ]; then
+              cp free_goods_detail_backup.json free_goods_detail.json
+              echo "🔄 Восстановлены результаты из резервной копии"
+            else
+              echo "❌ Нет резервной копии для восстановления"
+              exit 1
+            fi
+          fi
+          
+      - name: Validate and analyze results
         run: |
-          # Проверяем что файл создался и содержит данные
+          echo "Проверка результатов..."
+          
+          # Проверяем что файл создался
           if [ ! -f "free_goods_detail.json" ]; then
-            echo "Файл free_goods_detail.json не создан"
+            echo "❌ Файл free_goods_detail.json не создан"
             exit 1
           fi
           
           # Проверяем что JSON валидный
           if ! python -m json.tool free_goods_detail.json > /dev/null; then
-            echo "Файл free_goods_detail.json содержит невалидный JSON"
+            echo "❌ Файл free_goods_detail.json содержит невалидный JSON"
             exit 1
           fi
           
-          # Выводим статистику
-          echo "Результаты парсинга:"
+          # Анализируем результаты
+          echo "📊 Анализ результатов:"
+          python -c "
+          import json
+          import os
+          
+          with open('free_goods_detail.json', 'r', encoding='utf-8') as f:
+              data = json.load(f)
+              
+          current_count = data.get('total_count', 0)
+          print(f'🎮 Найдено игр: {current_count}')
+          print(f'⏰ Время обновления: {data.get(\"update_time\", \"неизвестно\")}')
+          print(f'📝 Версия парсера: {data.get(\"parser_version\", \"неизвестно\")}')
+          
+          # Сравниваем с предыдущими результатами
+          previous_count = 0
+          if os.path.exists('free_goods_detail_backup.json'):
+              try:
+                  with open('free_goods_detail_backup.json', 'r', encoding='utf-8') as f:
+                      prev_data = json.load(f)
+                      previous_count = prev_data.get('total_count', 0)
+              except:
+                  pass
+          
+          if previous_count > 0:
+              diff = current_count - previous_count
+              if diff > 0:
+                  print(f'📈 Добавлено игр: +{diff}')
+              elif diff < 0:
+                  print(f'📉 Убавилось игр: {diff}')
+              else:
+                  print(f'📊 Количество игр не изменилось')
+          
+          # Проверяем на аномально малое количество
+          if current_count < 3:
+              print(f'⚠️  ВНИМАНИЕ: Найдено очень мало игр ({current_count})')
+              print('Возможно, есть проблема с парсингом')
+          
+          # Показываем статистику если есть
+          if 'methods_used' in data:
+              print(f'🔍 Использованы методы: {data[\"methods_used\"]}')
+          "
+          
+          # Показываем последние несколько игр для проверки
+          echo ""
+          echo "🎯 Последние найденные игры:"
           python -c "
           import json
           with open('free_goods_detail.json', 'r', encoding='utf-8') as f:
               data = json.load(f)
-              print(f'Найдено игр: {data[\"total_count\"]}')
-              print(f'Время обновления: {data[\"update_time\"]}')
+              games = data.get('free_list', [])
+              for i, (title, url) in enumerate(games[-5:]):
+                  print(f'{i+1}. {title}')
           "
           
-      - name: Update free details json
+      - name: Check for significant changes
+        run: |
+          echo "Проверка значительных изменений..."
+          
+          python -c "
+          import json
+          import os
+          import sys
+          
+          current_count = 0
+          previous_count = 0
+          
+          # Читаем текущие результаты
+          try:
+              with open('free_goods_detail.json', 'r', encoding='utf-8') as f:
+                  data = json.load(f)
+                  current_count = data.get('total_count', 0)
+          except:
+              print('❌ Не удалось прочитать текущие результаты')
+              sys.exit(1)
+          
+          # Читаем предыдущие результаты
+          if os.path.exists('free_goods_detail_backup.json'):
+              try:
+                  with open('free_goods_detail_backup.json', 'r', encoding='utf-8') as f:
+                      prev_data = json.load(f)
+                      previous_count = prev_data.get('total_count', 0)
+              except:
+                  pass
+          
+          # Проверяем на значительные изменения
+          if previous_count > 0:
+              change_percent = abs(current_count - previous_count) / previous_count * 100
+              if change_percent > 50:
+                  print(f'⚠️  ВНИМАНИЕ: Значительное изменение количества игр!')
+                  print(f'Было: {previous_count}, стало: {current_count}')
+                  print(f'Изменение: {change_percent:.1f}%')
+                  
+                  # Если изменение критическое, можно восстановить backup
+                  if change_percent > 80 and current_count < previous_count:
+                      print('🔄 Восстанавливаем предыдущие результаты из-за критического падения')
+                      import shutil
+                      shutil.copy('free_goods_detail_backup.json', 'free_goods_detail.json')
+          "
+          
+      - name: Update repository
         run: |
           # Настраиваем git
           git config --global user.name 'BALCETUL'
@@ -74,33 +212,90 @@ jobs:
           
           # Проверяем есть ли изменения
           if git diff --quiet free_goods_detail.json; then
-            echo "Нет изменений в free_goods_detail.json"
+            echo "📝 Нет изменений в free_goods_detail.json"
           else
-            echo "Обнаружены изменения в free_goods_detail.json"
-            git add free_goods_detail.json
-            git commit -m "Автоматическое обновление free_goods_detail.json"
+            echo "📝 Обнаружены изменения в free_goods_detail.json"
             
-            # Пробуем отправить изменения с повторными попытками
+            # Добавляем файлы
+            git add free_goods_detail.json
+            
+            # Добавляем статистику если есть
+            if [ -f "parser_stats.json" ]; then
+              git add parser_stats.json
+            fi
+            
+            # Создаем коммит с детальной информацией
+            commit_message="🎮 Автообновление списка бесплатных игр Steam
+
+$(python -c "
+import json
+try:
+    with open('free_goods_detail.json', 'r', encoding='utf-8') as f:
+        data = json.load(f)
+        print(f'📊 Найдено игр: {data.get(\"total_count\", 0)}')
+        print(f'⏰ Время: {data.get(\"update_time\", \"неизвестно\")}')
+        print(f'🔧 Версия: {data.get(\"parser_version\", \"неизвестно\")}')
+except:
+    print('Обновление данных')
+")"
+            
+            git commit -m "$commit_message"
+            
+            # Пушим изменения с retry
             for i in {1..3}; do
               if git push; then
-                echo "Изменения отправлены успешно"
+                echo "✅ Изменения успешно отправлены в репозиторий"
                 break
               else
-                echo "Ошибка отправки на попытке $i"
-                if [ $i -eq 3 ]; then
-                  echo "Не удалось отправить изменения"
+                echo "❌ Ошибка отправки на попытке $i"
+                if [ $i -lt 3 ]; then
+                  echo "🔄 Синхронизация с удаленным репозиторием..."
+                  git pull --rebase
+                  sleep 10
+                else
+                  echo "❌ Не удалось отправить изменения"
                   exit 1
                 fi
-                git pull --rebase
-                sleep 10
               fi
             done
           fi
 
-      - name: Upload logs as artifact
+      - name: Upload logs and stats
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: steam-parser-logs
-          path: steam_parser.log
-          retention-days: 7
+          name: steam-parser-logs-${{ github.run_number }}
+          path: |
+            steam_parser.log
+            parser_stats.json
+            free_goods_detail_backup.json
+          retention-days: 30
+          
+      - name: Cleanup old artifacts
+        run: |
+          echo "🧹 Очистка временных файлов..."
+          if [ -f "free_goods_detail_backup.json" ]; then
+            rm -f free_goods_detail_backup.json
+            echo "Удалена резервная копия"
+          fi
+          
+      - name: Summary
+        if: always()
+        run: |
+          echo "📋 ИТОГОВЫЙ ОТЧЕТ:"
+          echo "=================="
+          
+          if [ -f "free_goods_detail.json" ]; then
+            python -c "
+            import json
+            with open('free_goods_detail.json', 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                print(f'✅ Статус: Успешно')
+                print(f'🎮 Найдено игр: {data.get(\"total_count\", 0)}')
+                print(f'⏰ Время: {data.get(\"update_time\", \"неизвестно\")}')
+            "
+          else
+            echo "❌ Статус: Ошибка - файл результатов не найден"
+          fi
+          
+          echo "=================="
