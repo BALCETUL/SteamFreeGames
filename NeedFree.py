@@ -22,7 +22,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Используем ваш оригинальный URL + добавляем поиск по скидкам
 API_URL_TEMPLATE = "https://store.steampowered.com/search/results/?query&start={pos}&count=100&infinite=1&specials=1"
 THREAD_CNT = 4  # Уменьшили с 8 до 4 для стабильности
 
@@ -40,7 +39,7 @@ class SteamParser:
         """Получить JSON ответ от Steam API с повторными попытками"""
         for attempt in range(max_retries):
             try:
-                # Небольшая задержка как в вашем старом коде
+                # Небольшая задержка 
                 if attempt > 0:
                     time.sleep(2)
                 
@@ -85,7 +84,7 @@ class SteamParser:
             
             games = []
             
-            # Ваша оригинальная логика - ищем элементы со 100% скидкой
+            #  ищем элементы со 100% скидкой
             discount_elements = page_parser.find_all(
                 name="div",
                 attrs={"class": "search_discount_block", "data-discount": "100"}
@@ -239,7 +238,7 @@ class SteamParser:
             # Валидируем результаты
             validated_games = self.validate_results(games)
             
-            # Создаем финальную структуру данных (как в вашем старом коде)
+            # Создаем финальную структуру данных 
             result_data = {
                 "total_count": len(validated_games),
                 "free_list": validated_games,
