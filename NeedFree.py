@@ -22,11 +22,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Обновленный URL с правильными параметрами для поиска бесплатных игр
-API_URL_TEMPLATE = "https://store.steampowered.com/search/results/?query&start={pos}&count=100&hidef2p=1&infinite=1&specials=1&maxprice=free"
-# Дополнительный URL для поиска DLC
-DLC_URL_TEMPLATE = "https://store.steampowered.com/search/results/?query&start={pos}&count=100&hidef2p=1&infinite=1&specials=1&maxprice=free&category3=21"
-THREAD_CNT = 4  # Уменьшили количество потоков для большей стабильности
+# Используем ваш оригинальный URL + добавляем поиск по скидкам
+API_URL_TEMPLATE = "https://store.steampowered.com/search/results/?query&start={pos}&count=100&infinite=1&specials=1"
+THREAD_CNT = 4  # Уменьшили с 8 до 4 для стабильности
 
 class SteamParser:
     def __init__(self):
@@ -38,12 +36,13 @@ class SteamParser:
         self.processed_ids = set()
         self.lock = threading.Lock()
         
-    def fetch_steam_json_response(self, url: str, max_retries: int = 5) -> dict:
+    def fetch_steam_json_response(self, url: str, max_retries: int = 3) -> dict:
         """Получить JSON ответ от Steam API с повторными попытками"""
         for attempt in range(max_retries):
             try:
-                # Добавляем случайную задержку для избежания rate limiting
-                time.sleep(random.uniform(0.1, 0.5))
+                # Небольшая задержка как в вашем старом коде
+                if attempt > 0:
+                    time.sleep(2)
                 
                 with self.session.get(url, timeout=10) as response:
                     response.raise_for_status()
@@ -57,17 +56,11 @@ class SteamParser:
                         
             except requests.exceptions.RequestException as e:
                 logger.warning(f"Ошибка запроса на попытке {attempt + 1}: {e}")
-                if attempt < max_retries - 1:
-                    # Экспоненциальный backoff
-                    sleep_time = (2 ** attempt) + random.uniform(0, 1)
-                    time.sleep(sleep_time)
-                else:
+                if attempt == max_retries - 1:
                     logger.error(f"Все попытки исчерпаны для URL: {url}")
                     
             except (json.JSONDecodeError, KeyError) as e:
                 logger.warning(f"Ошибка парсинга JSON на попытке {attempt + 1}: {e}")
-                if attempt < max_retries - 1:
-                    time.sleep(1)
                     
         return {}
     
@@ -92,7 +85,7 @@ class SteamParser:
             
             games = []
             
-            # Ищем все элементы со 100% скидкой (оригинальная логика)
+            # Ваша оригинальная логика - ищем элементы со 100% скидкой
             discount_elements = page_parser.find_all(
                 name="div",
                 attrs={"class": "search_discount_block", "data-discount": "100"}
@@ -118,32 +111,26 @@ class SteamParser:
                     logger.warning(f"Ошибка при парсинге элемента игры: {e}")
                     continue
             
-            # Дополнительно ищем игры с ценой "Free" или "Бесплатно"
-            price_elements = page_parser.find_all(
-                name="div",
-                attrs={"class": "search_price"}
-            )
+            # Дополнительно проверяем элементы с текстом "Free"
+            # (это поможет найти DLC без дополнительных запросов)
+            all_search_results = page_parser.find_all("a", class_="search_result_row")
             
-            for price_div in price_elements:
+            for result in all_search_results:
                 try:
-                    price_text = price_div.get_text().strip().lower()
-                    if 'free' in price_text or 'бесплатно' in price_text:
-                        # Находим контейнер игры
-                        game_container = price_div.parent
-                        while game_container and not game_container.get("href"):
-                            game_container = game_container.parent
-                            
-                        if game_container:
-                            title_element = game_container.find(name="span", attrs={"class": "title"})
+                    # Ищем цену
+                    price_element = result.find("div", class_="search_price")
+                    if price_element:
+                        price_text = price_element.get_text().strip().lower()
+                        if 'free' in price_text and '100%' in price_text:
+                            title_element = result.find("span", class_="title")
                             if title_element:
                                 title = title_element.get_text().strip()
-                                url = game_container.get("href", "")
+                                url = result.get("href", "")
                                 
                                 if title and url:
                                     games.append((title, url))
                                     
                 except Exception as e:
-                    logger.warning(f"Ошибка при парсинге элемента по цене: {e}")
                     continue
                     
             return games
@@ -152,10 +139,10 @@ class SteamParser:
             logger.error(f"Ошибка при парсинге HTML: {e}")
             return []
     
-    def get_free_games_batch(self, start_pos: int, url_template: str = API_URL_TEMPLATE) -> int:
+    def get_free_games_batch(self, start_pos: int) -> int:
         """Получить батч бесплатных игр начиная с позиции start_pos"""
-        url = url_template.format(pos=start_pos)
-        logger.info(f"Обрабатываем позицию {start_pos} с URL: {url}")
+        url = API_URL_TEMPLATE.format(pos=start_pos)
+        logger.info(f"Обрабатываем позицию {start_pos}")
         
         response_data = self.fetch_steam_json_response(url)
         if not response_data:
@@ -191,24 +178,23 @@ class SteamParser:
         """Получить все бесплатные игры со 100% скидкой"""
         logger.info("Начинаем поиск бесплатных игр в Steam")
         
-        # Сначала получаем обычные игры
-        total_count = self.get_free_games_batch(0, API_URL_TEMPLATE)
+        # Получаем общее количество результатов
+        total_count = self.get_free_games_batch(0)
         if total_count == 0:
             logger.error("Не удалось получить общее количество игр")
             return []
             
-        logger.info(f"Общее количество обычных игр для проверки: {total_count}")
+        logger.info(f"Общее количество игр для проверки: {total_count}")
         
-        # Создаем список позиций для обработки обычных игр
-        positions = list(range(0, total_count, 100))
+        # Создаем список позиций для обработки
+        positions = list(range(100, total_count, 100))  # Начинаем с 100, так как 0 уже обработан
         
         # Обрабатываем остальные позиции в многопоточном режиме
-        if len(positions) > 1:
+        if positions:
             with ThreadPoolExecutor(max_workers=THREAD_CNT) as executor:
-                # Пропускаем позицию 0, так как уже обработали
                 future_to_pos = {
-                    executor.submit(self.get_free_games_batch, pos, API_URL_TEMPLATE): pos 
-                    for pos in positions[1:]
+                    executor.submit(self.get_free_games_batch, pos): pos 
+                    for pos in positions
                 }
                 
                 for future in as_completed(future_to_pos):
@@ -219,33 +205,7 @@ class SteamParser:
                     except Exception as e:
                         logger.error(f"Ошибка при обработке позиции {pos}: {e}")
         
-        # Теперь ищем DLC
-        logger.info("Начинаем поиск бесплатных DLC")
-        dlc_count = self.get_free_games_batch(0, DLC_URL_TEMPLATE)
-        if dlc_count > 0:
-            logger.info(f"Общее количество DLC для проверки: {dlc_count}")
-            
-            # Создаем список позиций для обработки DLC
-            dlc_positions = list(range(0, dlc_count, 100))
-            
-            # Обрабатываем DLC позиции
-            if len(dlc_positions) > 1:
-                with ThreadPoolExecutor(max_workers=THREAD_CNT) as executor:
-                    # Пропускаем позицию 0, так как уже обработали
-                    future_to_pos = {
-                        executor.submit(self.get_free_games_batch, pos, DLC_URL_TEMPLATE): pos 
-                        for pos in dlc_positions[1:]
-                    }
-                    
-                    for future in as_completed(future_to_pos):
-                        pos = future_to_pos[future]
-                        try:
-                            future.result()
-                            logger.info(f"Завершена обработка DLC позиции {pos}")
-                        except Exception as e:
-                            logger.error(f"Ошибка при обработке DLC позиции {pos}: {e}")
-        
-        logger.info(f"Найдено уникальных бесплатных игр и DLC: {len(self.free_games)}")
+        logger.info(f"Найдено уникальных бесплатных игр: {len(self.free_games)}")
         return self.free_games
     
     def validate_results(self, games: List[Tuple[str, str]]) -> List[Tuple[str, str]]:
@@ -279,7 +239,7 @@ class SteamParser:
             # Валидируем результаты
             validated_games = self.validate_results(games)
             
-            # Создаем финальную структуру данных
+            # Создаем финальную структуру данных (как в вашем старом коде)
             result_data = {
                 "total_count": len(validated_games),
                 "free_list": validated_games,
