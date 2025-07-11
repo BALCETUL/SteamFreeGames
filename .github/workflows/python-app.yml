@@ -112,9 +112,9 @@ jobs:
               data = json.load(f)
               
           current_count = data.get('total_count', 0)
-          print(f'🎮 Найдено игр: {current_count}')
-          print(f'⏰ Время обновления: {data.get(\"update_time\", \"неизвестно\")}')
-          print(f'📝 Версия парсера: {data.get(\"parser_version\", \"неизвестно\")}')
+          print('🎮 Найдено игр: ' + str(current_count))
+          print('⏰ Время обновления: ' + str(data.get('update_time', 'неизвестно')))
+          print('📝 Версия парсера: ' + str(data.get('parser_version', 'неизвестно')))
           
           # Сравниваем с предыдущими результатами
           previous_count = 0
@@ -129,20 +129,20 @@ jobs:
           if previous_count > 0:
               diff = current_count - previous_count
               if diff > 0:
-                  print(f'📈 Добавлено игр: +{diff}')
+                  print('📈 Добавлено игр: +' + str(diff))
               elif diff < 0:
-                  print(f'📉 Убавилось игр: {diff}')
+                  print('📉 Убавилось игр: ' + str(diff))
               else:
-                  print(f'📊 Количество игр не изменилось')
+                  print('📊 Количество игр не изменилось')
           
           # Проверяем на аномально малое количество
           if current_count < 3:
-              print(f'⚠️ ВНИМАНИЕ: Найдено очень мало игр ({current_count})')
+              print('⚠️ ВНИМАНИЕ: Найдено очень мало игр (' + str(current_count) + ')')
               print('Возможно, есть проблема с парсингом')
           
           # Показываем статистику если есть
           if 'methods_used' in data:
-              print(f'🔍 Использованы методы: {data[\"methods_used\"]}')
+              print('🔍 Использованы методы: ' + str(data['methods_used']))
           "
           
           # Показываем последние несколько игр для проверки
@@ -154,7 +154,7 @@ jobs:
               data = json.load(f)
               games = data.get('free_list', [])
               for i, (title, url) in enumerate(games[-5:]):
-                  print(f'{i+1}. {title}')
+                  print(str(i+1) + '. ' + title)
           "
           
       - name: Check for significant changes
@@ -191,9 +191,9 @@ jobs:
           if previous_count > 0:
               change_percent = abs(current_count - previous_count) / previous_count * 100
               if change_percent > 50:
-                  print(f'⚠️ ВНИМАНИЕ: Значительное изменение количества игр!')
-                  print(f'Было: {previous_count}, стало: {current_count}')
-                  print(f'Изменение: {change_percent:.1f}%')
+                  print('⚠️ ВНИМАНИЕ: Значительное изменение количества игр!')
+                  print('Было: ' + str(previous_count) + ', стало: ' + str(current_count))
+                  print('Изменение: ' + str(round(change_percent, 1)) + '%')
                   
                   # Если изменение критическое, можно восстановить backup
                   if change_percent > 80 and current_count < previous_count:
@@ -254,11 +254,7 @@ jobs:
             ")
             
             # Создаем коммит с информацией
-            git commit -m "🎮 Автообновление списка бесплатных игр Steam
-
-📊 Найдено игр: $GAME_COUNT
-⏰ Время: $UPDATE_TIME
-🔧 Версия: $PARSER_VERSION"
+            git commit -m "Автообновление free_goods_detail.json - Найдено игр: $GAME_COUNT, Время: $UPDATE_TIME, Версия: $PARSER_VERSION"
             
             # Пушим изменения с retry
             for i in {1..3}; do
@@ -283,11 +279,8 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: steam-parser-logs-${{ github.run_number }}
-          path: |
-            steam_parser.log
-            parser_stats.json
-            free_goods_detail_backup.json
+          name: steam-parser-logs
+          path: steam_parser.log
           retention-days: 7
           
       - name: Summary
@@ -301,9 +294,9 @@ jobs:
             import json
             with open('free_goods_detail.json', 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                print(f'✅ Статус: Успешно')
-                print(f'🎮 Найдено игр: {data.get(\"total_count\", 0)}')
-                print(f'⏰ Время: {data.get(\"update_time\", \"неизвестно\")}')
+                print('✅ Статус: Успешно')
+                print('🎮 Найдено игр: ' + str(data.get('total_count', 0)))
+                print('⏰ Время: ' + str(data.get('update_time', 'неизвестно')))
             "
           else
             echo "❌ Статус: Ошибка - файл результатов не найден"
