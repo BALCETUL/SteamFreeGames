@@ -22,7 +22,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-API_URL_TEMPLATE = "https://store.steampowered.com/search/results/?query&start={pos}&count=100&infinite=1"
+# Обновленный URL с правильными параметрами для поиска бесплатных игр
+API_URL_TEMPLATE = "https://store.steampowered.com/search/results/?query&start={pos}&count=100&hidef2p=1&infinite=1&specials=1&maxprice=free"
+# Дополнительный URL для поиска DLC
+DLC_URL_TEMPLATE = "https://store.steampowered.com/search/results/?query&start={pos}&count=100&hidef2p=1&infinite=1&specials=1&maxprice=free&category3=21"
 THREAD_CNT = 4  # Уменьшили количество потоков для большей стабильности
 
 class SteamParser:
@@ -87,13 +90,14 @@ class SteamParser:
         try:
             page_parser = bs4.BeautifulSoup(html, "html.parser")
             
-            # Ищем все элементы со 100% скидкой
+            games = []
+            
+            # Ищем все элементы со 100% скидкой (оригинальная логика)
             discount_elements = page_parser.find_all(
                 name="div",
                 attrs={"class": "search_discount_block", "data-discount": "100"}
             )
             
-            games = []
             for div in discount_elements:
                 try:
                     # Находим родительский элемент с информацией об игре
@@ -113,6 +117,34 @@ class SteamParser:
                 except Exception as e:
                     logger.warning(f"Ошибка при парсинге элемента игры: {e}")
                     continue
+            
+            # Дополнительно ищем игры с ценой "Free" или "Бесплатно"
+            price_elements = page_parser.find_all(
+                name="div",
+                attrs={"class": "search_price"}
+            )
+            
+            for price_div in price_elements:
+                try:
+                    price_text = price_div.get_text().strip().lower()
+                    if 'free' in price_text or 'бесплатно' in price_text:
+                        # Находим контейнер игры
+                        game_container = price_div.parent
+                        while game_container and not game_container.get("href"):
+                            game_container = game_container.parent
+                            
+                        if game_container:
+                            title_element = game_container.find(name="span", attrs={"class": "title"})
+                            if title_element:
+                                title = title_element.get_text().strip()
+                                url = game_container.get("href", "")
+                                
+                                if title and url:
+                                    games.append((title, url))
+                                    
+                except Exception as e:
+                    logger.warning(f"Ошибка при парсинге элемента по цене: {e}")
+                    continue
                     
             return games
             
@@ -120,10 +152,10 @@ class SteamParser:
             logger.error(f"Ошибка при парсинге HTML: {e}")
             return []
     
-    def get_free_games_batch(self, start_pos: int) -> int:
+    def get_free_games_batch(self, start_pos: int, url_template: str = API_URL_TEMPLATE) -> int:
         """Получить батч бесплатных игр начиная с позиции start_pos"""
-        url = API_URL_TEMPLATE.format(pos=start_pos)
-        logger.info(f"Обрабатываем позицию {start_pos}")
+        url = url_template.format(pos=start_pos)
+        logger.info(f"Обрабатываем позицию {start_pos} с URL: {url}")
         
         response_data = self.fetch_steam_json_response(url)
         if not response_data:
@@ -159,15 +191,15 @@ class SteamParser:
         """Получить все бесплатные игры со 100% скидкой"""
         logger.info("Начинаем поиск бесплатных игр в Steam")
         
-        # Сначала получаем общее количество результатов
-        total_count = self.get_free_games_batch(0)
+        # Сначала получаем обычные игры
+        total_count = self.get_free_games_batch(0, API_URL_TEMPLATE)
         if total_count == 0:
             logger.error("Не удалось получить общее количество игр")
             return []
             
-        logger.info(f"Общее количество игр для проверки: {total_count}")
+        logger.info(f"Общее количество обычных игр для проверки: {total_count}")
         
-        # Создаем список позиций для обработки
+        # Создаем список позиций для обработки обычных игр
         positions = list(range(0, total_count, 100))
         
         # Обрабатываем остальные позиции в многопоточном режиме
@@ -175,7 +207,7 @@ class SteamParser:
             with ThreadPoolExecutor(max_workers=THREAD_CNT) as executor:
                 # Пропускаем позицию 0, так как уже обработали
                 future_to_pos = {
-                    executor.submit(self.get_free_games_batch, pos): pos 
+                    executor.submit(self.get_free_games_batch, pos, API_URL_TEMPLATE): pos 
                     for pos in positions[1:]
                 }
                 
@@ -187,7 +219,33 @@ class SteamParser:
                     except Exception as e:
                         logger.error(f"Ошибка при обработке позиции {pos}: {e}")
         
-        logger.info(f"Найдено уникальных бесплатных игр: {len(self.free_games)}")
+        # Теперь ищем DLC
+        logger.info("Начинаем поиск бесплатных DLC")
+        dlc_count = self.get_free_games_batch(0, DLC_URL_TEMPLATE)
+        if dlc_count > 0:
+            logger.info(f"Общее количество DLC для проверки: {dlc_count}")
+            
+            # Создаем список позиций для обработки DLC
+            dlc_positions = list(range(0, dlc_count, 100))
+            
+            # Обрабатываем DLC позиции
+            if len(dlc_positions) > 1:
+                with ThreadPoolExecutor(max_workers=THREAD_CNT) as executor:
+                    # Пропускаем позицию 0, так как уже обработали
+                    future_to_pos = {
+                        executor.submit(self.get_free_games_batch, pos, DLC_URL_TEMPLATE): pos 
+                        for pos in dlc_positions[1:]
+                    }
+                    
+                    for future in as_completed(future_to_pos):
+                        pos = future_to_pos[future]
+                        try:
+                            future.result()
+                            logger.info(f"Завершена обработка DLC позиции {pos}")
+                        except Exception as e:
+                            logger.error(f"Ошибка при обработке DLC позиции {pos}: {e}")
+        
+        logger.info(f"Найдено уникальных бесплатных игр и DLC: {len(self.free_games)}")
         return self.free_games
     
     def validate_results(self, games: List[Tuple[str, str]]) -> List[Tuple[str, str]]:
@@ -255,4 +313,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
