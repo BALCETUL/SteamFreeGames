@@ -2,12 +2,12 @@
   "total_count": 7,
   "free_list": [
     [
-      "Battlestar Galactica Deadlock",
-      "https://store.steampowered.com/app/544610/Battlestar_Galactica_Deadlock/?snr=1_7_7_2300_150_2"
-    ],
-    [
       "Field of Glory II: Medieval",
       "https://store.steampowered.com/app/1368870/Field_of_Glory_II_Medieval/?snr=1_7_7_2300_150_5"
+    ],
+    [
+      "Battlestar Galactica Deadlock",
+      "https://store.steampowered.com/app/544610/Battlestar_Galactica_Deadlock/?snr=1_7_7_2300_150_2"
     ],
     [
       "Fantasy General II",
@@ -15,7 +15,7 @@
     ],
     [
       "Ultimate Zombie Defense",
-      "https://store.steampowered.com/app/1035510/Ultimate_Zombie_Defense/?snr=1_7_7_2300_150_11"
+      "https://store.steampowered.com/app/1035510/Ultimate_Zombie_Defense/?snr=1_7_7_2300_150_10"
     ],
     [
       "Caribbean Crashers",
@@ -30,5 +30,13 @@
       "https://store.steampowered.com/app/3184050/Like_a_Dragon_Pirate_Yakuza_in_Hawaii__Kazuma_Kiryu_Special_Outfit/?snr=1_7_7_2300_150_194"
     ]
   ],
-  "update_time": "2025-07-11 22:13:34"
+  "update_time": "2025-07-11 23:38:41",
+  "parser_version": "2.0_improved",
+  "methods_used": [
+    "discount_attribute",
+    "free_text",
+    "discount_text",
+    "zero_price"
+  ],
+  "verification_enabled": true
 }
