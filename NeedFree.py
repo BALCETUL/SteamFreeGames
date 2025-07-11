@@ -23,7 +23,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 API_URL_TEMPLATE = "https://store.steampowered.com/search/results/?query&start={pos}&count=100&infinite=1&specials=1"
-THREAD_CNT = 4  # Уменьшили с 8 до 4 для стабильности
+THREAD_CNT = 8  
 
 class SteamParser:
     def __init__(self):
