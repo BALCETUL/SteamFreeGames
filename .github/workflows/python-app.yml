@@ -104,4 +104,3 @@ with open('free_goods_detail.json', 'r', encoding='utf-8') as f:
           name: steam-parser-logs
           path: steam_parser.log
           retention-days: 7
-
