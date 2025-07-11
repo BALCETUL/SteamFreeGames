@@ -62,8 +62,8 @@ jobs:
           import json
           with open('free_goods_detail.json', 'r', encoding='utf-8') as f:
               data = json.load(f)
-              print(f'Найдено игр: {data[\\"total_count\\"]}')
-              print(f'Время обновления: {data[\\"update_time\\"]}')
+              print(f'Найдено игр: {data[\"total_count\"]}')
+              print(f'Время обновления: {data[\"update_time\"]}')
           "
           
       - name: Update free details json
@@ -98,7 +98,7 @@ jobs:
           fi
 
       - name: Upload logs as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: steam-parser-logs
