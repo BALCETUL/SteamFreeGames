@@ -6,20 +6,20 @@
       "https://store.steampowered.com/app/544610/Battlestar_Galactica_Deadlock/?snr=1_7_7_2300_150_2"
     ],
     [
-      "Field of Glory II: Medieval",
-      "https://store.steampowered.com/app/1368870/Field_of_Glory_II_Medieval/?snr=1_7_7_2300_150_5"
-    ],
-    [
       "Fantasy General II",
       "https://store.steampowered.com/app/1025440/Fantasy_General_II/?snr=1_7_7_2300_150_4"
+    ],
+    [
+      "Field of Glory II: Medieval",
+      "https://store.steampowered.com/app/1368870/Field_of_Glory_II_Medieval/?snr=1_7_7_2300_150_5"
     ],
     [
       "Ultimate Zombie Defense",
       "https://store.steampowered.com/app/1035510/Ultimate_Zombie_Defense/?snr=1_7_7_2300_150_8"
     ]
   ],
-  "update_time": "2025-07-12 15:14:10",
-  "parser_version": "2.1_optimized",
+  "update_time": "2025-07-12 15:18:39",
+  "parser_version": "2.0_improved",
   "methods_used": [
     "discount_attribute",
     "free_text",
