@@ -3,7 +3,7 @@ name: Crawler Runner
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 * * * *'  # Каждые 60 минут
+    - cron: '0 * * * *'  # Каждый час
 
 jobs:
   build:
@@ -13,7 +13,7 @@ jobs:
     - name: Git checkout
       uses: actions/checkout@v3
       with:
-        ref: master
+        ref: main
 
     - name: Set up Python 3.10
       uses: actions/setup-python@v3
