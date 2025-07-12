@@ -3,40 +3,48 @@
   "free_list": [
     [
       "Battlestar Galactica Deadlock",
-      "https://store.steampowered.com/app/544610/Battlestar_Galactica_Deadlock/?snr=1_7_7_2300_150_2"
+      "https://store.steampowered.com/app/544610/Battlestar_Galactica_Deadlock/?snr=1_7_7_2300_150_2",
+      "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/544610/capsule_sm_120.jpg"
     ],
     [
       "Fantasy General II",
-      "https://store.steampowered.com/app/1025440/Fantasy_General_II/?snr=1_7_7_2300_150_4"
+      "https://store.steampowered.com/app/1025440/Fantasy_General_II/?snr=1_7_7_2300_150_4",
+      "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1025440/capsule_sm_120.jpg"
     ],
     [
       "Field of Glory II: Medieval",
-      "https://store.steampowered.com/app/1368870/Field_of_Glory_II_Medieval/?snr=1_7_7_2300_150_5"
+      "https://store.steampowered.com/app/1368870/Field_of_Glory_II_Medieval/?snr=1_7_7_2300_150_5",
+      "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1368870/capsule_sm_120.jpg"
     ],
     [
       "Ultimate Zombie Defense",
-      "https://store.steampowered.com/app/1035510/Ultimate_Zombie_Defense/?snr=1_7_7_2300_150_8"
+      "https://store.steampowered.com/app/1035510/Ultimate_Zombie_Defense/?snr=1_7_7_2300_150_8",
+      "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1035510/718169797cebbef2faf54f1dbffe9b6820c22fbe/capsule_sm_120.jpg"
     ],
     [
       "Caribbean Crashers",
-      "https://store.steampowered.com/app/2921380/Caribbean_Crashers/?snr=1_7_7_2300_150_22"
+      "https://store.steampowered.com/app/2921380/Caribbean_Crashers/?snr=1_7_7_2300_150_22",
+      ""
     ],
     [
       "World of Warships — Starter Pack: Dreadnought",
-      "https://store.steampowered.com/app/1880790/World_of_Warships__Starter_Pack_Dreadnought/?snr=1_7_7_2300_150_194"
+      "https://store.steampowered.com/app/1880790/World_of_Warships__Starter_Pack_Dreadnought/?snr=1_7_7_2300_150_194",
+      ""
     ],
     [
       "Like a Dragon: Pirate Yakuza in Hawaii - Kazuma Kiryu Special Outfit",
-      "https://store.steampowered.com/app/3184050/Like_a_Dragon_Pirate_Yakuza_in_Hawaii__Kazuma_Kiryu_Special_Outfit/?snr=1_7_7_2300_150_194"
+      "https://store.steampowered.com/app/3184050/Like_a_Dragon_Pirate_Yakuza_in_Hawaii__Kazuma_Kiryu_Special_Outfit/?snr=1_7_7_2300_150_194",
+      ""
     ]
   ],
-  "update_time": "2025-07-12 13:21:51",
-  "parser_version": "2.0_improved",
+  "update_time": "2025-07-12 14:34:19",
+  "parser_version": "3.0_with_images",
   "methods_used": [
     "discount_attribute",
     "free_text",
     "discount_text",
     "zero_price"
   ],
-  "verification_enabled": true
+  "verification_enabled": true,
+  "images_included": true
 }
