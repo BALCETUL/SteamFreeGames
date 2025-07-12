@@ -41,9 +41,10 @@ class GameInfo:
     discount_percent: int
     content_type: str  # app, sub, bundle
     found_method: str  # какой метод нашел игру
+    image_url: str = ""  # URL реальной обложки
     
-    def to_tuple(self) -> Tuple[str, str]:
-        return (self.title, self.url)
+    def to_tuple(self) -> Tuple[str, str, str]:
+        return (self.title, self.url, self.image_url)
 
 class SteamParser:
     def __init__(self):
@@ -70,7 +71,17 @@ class SteamParser:
         try:
             with open('free_goods_detail.json', 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                for title, url in data.get('free_list', []):
+                for item in data.get('free_list', []):
+                    # Поддерживаем старый и новый форматы
+                    if isinstance(item, list):
+                        if len(item) >= 3:
+                            title, url, image_url = item[0], item[1], item[2]
+                        else:
+                            title, url, image_url = item[0], item[1], ""
+                    else:
+                        # Старый формат - только название и URL
+                        title, url, image_url = item, "", ""
+                    
                     game_id = self.extract_game_id(url)
                     self.previous_results[game_id] = GameInfo(
                         title=title,
@@ -79,7 +90,8 @@ class SteamParser:
                         price_info="Previous result",
                         discount_percent=100,
                         content_type=self.get_content_type(url),
-                        found_method="previous"
+                        found_method="previous",
+                        image_url=image_url
                     )
             logger.info(f"Загружено {len(self.previous_results)} предыдущих результатов")
         except FileNotFoundError:
@@ -128,6 +140,49 @@ class SteamParser:
             logger.warning(f"Ошибка извлечения ID из URL {url}: {e}")
             return hashlib.md5(url.encode()).hexdigest()[:16]
     
+    def extract_image_url(self, game_container) -> str:
+        """Извлекаем реальный URL обложки игры из HTML"""
+        try:
+            # Ищем изображение в контейнере игры
+            img_element = game_container.find("img")
+            if img_element:
+                # Получаем src или data-src
+                img_url = img_element.get("src") or img_element.get("data-src") or ""
+                
+                # Очищаем и нормализуем URL
+                if img_url:
+                    # Убираем параметры изменения размера, чтобы получить оригинал
+                    img_url = re.sub(r'(\\?.*$)', '', img_url)
+                    
+                    # Если URL относительный, делаем абсолютным
+                    if img_url.startswith('//'):
+                        img_url = 'https:' + img_url
+                    elif img_url.startswith('/'):
+                        img_url = 'https://store.steampowered.com' + img_url
+                    
+                    logger.debug(f"Найдена обложка: {img_url}")
+                    return img_url
+            
+            # Если не нашли img, попробуем найти в стилях background-image
+            style_elements = game_container.find_all(['div', 'span'], style=True)
+            for element in style_elements:
+                style = element.get('style', '')
+                if 'background-image' in style:
+                    match = re.search(r'url\\(["\\']?(.*?)["\\']?\\)', style)
+                    if match:
+                        img_url = match.group(1)
+                        if img_url.startswith('//'):
+                            img_url = 'https:' + img_url
+                        elif img_url.startswith('/'):
+                            img_url = 'https://store.steampowered.com' + img_url
+                        logger.debug(f"Найдена обложка в стилях: {img_url}")
+                        return img_url
+            
+        except Exception as e:
+            logger.warning(f"Ошибка при извлечении URL изображения: {e}")
+        
+        return ""
+    
     def fetch_steam_json_response(self, url: str, max_retries: int = MAX_RETRIES) -> dict:
         """Получить JSON ответ от Steam API с улучшенными повторными попытками"""
         for attempt in range(max_retries):
@@ -166,7 +221,7 @@ class SteamParser:
         return {}
     
     def parse_free_games_from_html(self, html: str, position: int = 0) -> List[GameInfo]:
-        """Улучшенный парсинг HTML с множественными методами поиска"""
+        """Улучшенный парсинг HTML с множественными методами поиска и извлечением обложек"""
         games = []
         
         try:
@@ -243,6 +298,7 @@ class SteamParser:
                     
                 title = title_element.get_text().strip()
                 url = game_container.get("href", "")
+                image_url = self.extract_image_url(game_container)
                 
                 if title and url:
                     game_id = self.extract_game_id(url)
@@ -253,7 +309,8 @@ class SteamParser:
                         price_info="100% discount",
                         discount_percent=100,
                         content_type=self.get_content_type(url),
-                        found_method="discount_attribute"
+                        found_method="discount_attribute",
+                        image_url=image_url
                     )
                     games.append(game)
                     logger.debug(f"Найдена игра (метод 1): {title}")
@@ -290,6 +347,7 @@ class SteamParser:
                         
                     title = title_element.get_text().strip()
                     url = game_container.get("href", "")
+                    image_url = self.extract_image_url(game_container)
                     
                     if title and url:
                         game_id = self.extract_game_id(url)
@@ -300,7 +358,8 @@ class SteamParser:
                             price_info=price_text,
                             discount_percent=100,
                             content_type=self.get_content_type(url),
-                            found_method="free_text"
+                            found_method="free_text",
+                            image_url=image_url
                         )
                         games.append(game)
                         logger.debug(f"Найдена игра (метод 2): {title} - {price_text}")
@@ -335,6 +394,7 @@ class SteamParser:
                         
                     title = title_element.get_text().strip()
                     url = game_container.get("href", "")
+                    image_url = self.extract_image_url(game_container)
                     
                     if title and url:
                         game_id = self.extract_game_id(url)
@@ -345,7 +405,8 @@ class SteamParser:
                             price_info=discount_text,
                             discount_percent=100,
                             content_type=self.get_content_type(url),
-                            found_method="discount_text"
+                            found_method="discount_text",
+                            image_url=image_url
                         )
                         games.append(game)
                         logger.debug(f"Найдена игра (метод 3): {title} - {discount_text}")
@@ -389,6 +450,7 @@ class SteamParser:
                         
                     title = title_element.get_text().strip()
                     url = game_container.get("href", "")
+                    image_url = self.extract_image_url(game_container)
                     
                     if title and url:
                         game_id = self.extract_game_id(url)
@@ -399,7 +461,8 @@ class SteamParser:
                             price_info=price_text,
                             discount_percent=100,
                             content_type=self.get_content_type(url),
-                            found_method="zero_price"
+                            found_method="zero_price",
+                            image_url=image_url
                         )
                         games.append(game)
                         logger.debug(f"Найдена игра (метод 4): {title} - {price_text}")
@@ -472,7 +535,7 @@ class SteamParser:
         except:
             return False
     
-    def get_all_free_games(self) -> List[Tuple[str, str]]:
+    def get_all_free_games(self) -> List[Tuple[str, str, str]]:
         """Получить все бесплатные игры с улучшенной логикой"""
         logger.info("Начинаем поиск бесплатных игр в Steam")
         
@@ -513,54 +576,70 @@ class SteamParser:
         # Простая статистика в логах
         method_stats = {}
         type_stats = {}
+        images_found = 0
         for game in self.free_games.values():
             method_stats[game.found_method] = method_stats.get(game.found_method, 0) + 1
             type_stats[game.content_type] = type_stats.get(game.content_type, 0) + 1
+            if game.image_url:
+                images_found += 1
         
         logger.info(f"Статистика по методам поиска: {method_stats}")
         logger.info(f"Статистика по типам контента: {type_stats}")
+        logger.info(f"Найдено обложек: {images_found}/{len(final_games)}")
         
         return final_games
     
-    def validate_results(self, games: List[Tuple[str, str]]) -> List[Tuple[str, str]]:
+    def validate_results(self, games: List[Tuple[str, str, str]]) -> List[Tuple[str, str, str]]:
         """Расширенная валидация результатов"""
         validated_games = []
         
-        for title, url in games:
-            # Базовая валидация
-            if not title or not url:
-                logger.warning(f"Пропущена игра с пустым названием или URL: {title}, {url}")
-                continue
-                
-            # Проверяем что URL корректный
+        for item in games:
             try:
-                parsed = urlparse(url)
-                if not parsed.scheme or not parsed.netloc:
-                    logger.warning(f"Некорректный URL: {url}")
+                title, url, image_url = item
+                
+                # Базовая валидация
+                if not title or not url:
+                    logger.warning(f"Пропущена игра с пустым названием или URL: {title}, {url}")
                     continue
-            except Exception as e:
-                logger.warning(f"Ошибка парсинга URL {url}: {e}")
+                    
+                # Проверяем что URL корректный
+                try:
+                    parsed = urlparse(url)
+                    if not parsed.scheme or not parsed.netloc:
+                        logger.warning(f"Некорректный URL: {url}")
+                        continue
+                except Exception as e:
+                    logger.warning(f"Ошибка парсинга URL {url}: {e}")
+                    continue
+                    
+                # Проверяем что это действительно Steam URL
+                if not any(domain in url for domain in ['steampowered.com', 'store.steampowered.com']):
+                    logger.warning(f"Не Steam URL: {url}")
+                    continue
+                
+                # Проверяем длину названия
+                if len(title) > 200:
+                    logger.warning(f"Слишком длинное название игры: {title[:50]}...")
+                    title = title[:200]
+                
+                # Очищаем название от лишних символов
+                title = re.sub(r'\\s+', ' ', title).strip()
+                
+                # Валидируем URL изображения
+                if image_url and not image_url.startswith('http'):
+                    logger.warning(f"Некорректный URL изображения: {image_url}")
+                    image_url = ""
+                    
+                validated_games.append((title, url, image_url))
+                
+            except (ValueError, IndexError) as e:
+                logger.warning(f"Ошибка при обработке элемента {item}: {e}")
                 continue
                 
-            # Проверяем что это действительно Steam URL
-            if not any(domain in url for domain in ['steampowered.com', 'store.steampowered.com']):
-                logger.warning(f"Не Steam URL: {url}")
-                continue
-            
-            # Проверяем длину названия
-            if len(title) > 200:
-                logger.warning(f"Слишком длинное название игры: {title[:50]}...")
-                title = title[:200]
-            
-            # Очищаем название от лишних символов
-            title = re.sub(r'\\s+', ' ', title).strip()
-                
-            validated_games.append((title, url))
-            
         logger.info(f"Валидировано {len(validated_games)} из {len(games)} игр")
         return validated_games
     
-    def save_results(self, games: List[Tuple[str, str]]):
+    def save_results(self, games: List[Tuple[str, str, str]]):
         """Сохранить результаты с резервным копированием"""
         try:
             # Создаем резервную копию предыдущих результатов
@@ -582,16 +661,17 @@ class SteamParser:
                 "update_time": datetime.datetime.now(
                     tz=pytz.timezone("Europe/Kiev")
                 ).strftime('%Y-%m-%d %H:%M:%S'),
-                "parser_version": "2.1_optimized",
+                "parser_version": "3.0_with_images",
                 "methods_used": ["discount_attribute", "free_text", "discount_text", "zero_price"],
-                "verification_enabled": True
+                "verification_enabled": True,
+                "images_included": True
             }
             
             # Сохраняем в файл
             with open("free_goods_detail.json", "w", encoding='utf-8') as fp:
                 json.dump(result_data, fp, ensure_ascii=False, indent=2)
                 
-            logger.info(f"Результаты сохранены: {len(validated_games)} игр")
+            logger.info(f"Результаты сохранены: {len(validated_games)} игр с обложками")
             
         except Exception as e:
             logger.error(f"Ошибка при сохранении результатов: {e}")
@@ -611,7 +691,7 @@ def main():
     
     try:
         logger.info("="*50)
-        logger.info("ЗАПУСК ОПТИМИЗИРОВАННОГО ПАРСЕРА STEAM")
+        logger.info("ЗАПУСК ПАРСЕРА STEAM С ОБЛОЖКАМИ")
         logger.info("="*50)
         
         parser = SteamParser()
