@@ -44,54 +44,93 @@
     }
     .img-container {
       position: relative;
+      background: #374151;
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .game-img {
       width: 100%;
-      aspect-ratio: 460/215;
+      height: 200px;
       object-fit: cover;
       display: block;
+      transition: opacity 0.3s ease;
+    }
+    .game-img.loading {
+      opacity: 0.5;
+    }
+    .game-img.error {
+      display: none;
+    }
+    .img-placeholder {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #374151, #4b5563);
+      color: #9ca3af;
+      font-size: 0.875rem;
+      text-align: center;
+      padding: 1rem;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .img-placeholder.show {
+      opacity: 1;
     }
     .discount-badge {
       position: absolute;
-      top: 0.2rem;
-      right: 0.2rem;
+      top: 0.5rem;
+      right: 0.5rem;
       background: linear-gradient(to right, #22c55e, #16a34a);
       color: #fff;
-      padding: 0.1rem 0.3rem;
+      padding: 0.25rem 0.5rem;
       border-radius: .25rem;
       font-weight: 600;
+      font-size: 0.875rem;
       box-shadow: 0 0 5px rgba(34,197,94,0.5);
-      opacity: 0.9;
+      opacity: 0.95;
       z-index: 10;
       animation: fadeIn 0.5s ease-out;
     }
     .steam-btn {
       background: linear-gradient(to right, #3b82f6, #2563eb);
-      padding: .5rem 1rem;
-      border-radius: .25rem;
+      padding: .75rem 1.5rem;
+      border-radius: .375rem;
       transition: all 0.3s ease;
       text-decoration: none;
       color: #fff;
+      font-weight: 500;
+      display: inline-block;
+      width: 100%;
+      text-align: center;
     }
     .steam-btn:hover {
       background: linear-gradient(to right, #2563eb, #1d4ed8);
-      box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+      box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+      transform: translateY(-1px);
     }
     .update-box {
       position: absolute;
       top: 1rem;
       right: 1rem;
-      background: rgba(31,41,55,0.8);
-      padding: .5rem 1rem;
+      background: rgba(31,41,55,0.9);
+      padding: .75rem 1rem;
       border-radius: 1rem;
       display: flex;
       align-items: center;
       gap: .5rem;
       border: 1px solid rgba(59,130,246,0.3);
-      box-shadow: 0 0 8px rgba(59,130,246,0.2);
+      box-shadow: 0 0 15px rgba(59,130,246,0.2);
       font-size: .875rem;
       color: #e2e8f0;
       cursor: pointer;
+      backdrop-filter: blur(10px);
     }
     .update-icon {
       width: 1rem;
@@ -100,26 +139,44 @@
     }
     .update-box .tooltip {
       position: absolute;
-      top: 2.8rem;
+      top: 3.5rem;
       right: 0;
-      background: rgba(31,41,55,0.9);
+      background: rgba(31,41,55,0.95);
       color: #e2e8f0;
-      padding: .75rem 1rem;
-      border-radius: .5rem;
-      width: 550px;
-      font-size: .85rem;
-      line-height: 1.4;
+      padding: 1rem 1.25rem;
+      border-radius: .75rem;
+      width: 600px;
+      font-size: .875rem;
+      line-height: 1.5;
       white-space: pre-line;
       opacity: 0;
-      transform: translateY(-5px);
-      transition: opacity 0.2s ease, transform 0.2s ease;
+      transform: translateY(-10px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
       pointer-events: none;
-      z-index: 20;
+      z-index: 30;
+      backdrop-filter: blur(15px);
+      border: 1px solid rgba(59,130,246,0.2);
     }
     .update-box:hover .tooltip {
       opacity: 1;
       transform: translateY(0);
       pointer-events: auto;
+    }
+    .stats-info {
+      position: fixed;
+      bottom: 1rem;
+      left: 1rem;
+      background: rgba(31,41,55,0.9);
+      padding: .75rem 1rem;
+      border-radius: .75rem;
+      font-size: .875rem;
+      color: #9ca3af;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(59,130,246,0.1);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
@@ -131,25 +188,107 @@
     </svg>
     Обновлено (UTC+3): <span id="update-time">-</span>
     <div class="tooltip">
-      Этот сайт автоматически собирает "ИГРЫ и DLC" со скидкой 100% в Steam.
-      Обновление данных происходит каждый час. (могут быть задержка от сервера)
-      Скрипт парсит магазин Steam и обновляет список в JSON.
+      🎮 Этот сайт автоматически собирает ИГРЫ и DLC со скидкой 100% в Steam.
+
+      ⏰ Обновление данных происходит каждый час (возможны задержки от сервера).
+      
+      🔄 Новая версия 3.0: теперь парсятся реальные обложки игр прямо из Steam!
+      
+      📊 Скрипт использует 4 метода поиска для максимальной точности и обновляет список в JSON.
     </div>
   </div>
 
-  <div class="w-full text-center mb-8 mt-12">
-    <h1 class="text-4xl md:text-6xl font-bold mb-2 animate__fadeIn text-white">SteamFreeGames</h1>
-    <p class="text-lg text-gray-300 animate__fadeIn" style="animation-delay: 0.2s;">Сегодня бесплатные предложения в Steam со 100% скидкой!</p>
-    <p class="text-md mt-4 animate__fadeIn text-white" style="animation-delay: 0.4s;">Бесплатно сейчас: <span id="total-count">0</span></p>
+  <div class="w-full text-center mb-8 mt-16">
+    <h1 class="text-4xl md:text-6xl font-bold mb-4 animate__fadeIn text-white">SteamFreeGames</h1>
+    <p class="text-lg text-gray-300 animate__fadeIn mb-2" style="animation-delay: 0.2s;">Сегодня бесплатные предложения в Steam со 100% скидкой!</p>
+    <p class="text-xl font-semibold animate__fadeIn text-green-400" style="animation-delay: 0.4s;">🎁 Бесплатно сейчас: <span id="total-count">0</span></p>
   </div>
 
-  <div id="loading" class="flex items-center justify-center my-8"><div class="loading-spinner"></div></div>
-  <div id="error" class="text-center hidden"><p class="error-message">Не удалось загрузить список. Попробуйте позже!</p></div>
-  <div id="no-games" class="text-center text-gray-300 hidden"><p class="text-xl">На данный момент нет бесплатных предложений.</p></div>
+  <div id="loading" class="flex flex-col items-center justify-center my-8">
+    <div class="loading-spinner"></div>
+    <p class="mt-4 text-gray-400">Загружаем свежие раздачи...</p>
+  </div>
+  
+  <div id="error" class="text-center hidden">
+    <p class="error-message">❌ Не удалось загрузить список. Попробуйте позже!</p>
+  </div>
+  
+  <div id="no-games" class="text-center text-gray-300 hidden">
+    <p class="text-xl">😔 На данный момент нет бесплатных предложений.</p>
+  </div>
 
-  <div id="games-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl w-full hidden"></div>
+  <div id="games-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl w-full hidden"></div>
+
+  <div class="stats-info hidden" id="stats-info">
+    <span id="images-count">-</span> обложек загружено
+  </div>
 
   <script>
+    let totalImages = 0;
+    let loadedImages = 0;
+
+    function updateImageStats() {
+      const statsElement = document.getElementById('stats-info');
+      const imagesCountElement = document.getElementById('images-count');
+      if (statsElement && imagesCountElement) {
+        imagesCountElement.textContent = `${loadedImages}/${totalImages}`;
+        if (totalImages > 0) {
+          statsElement.classList.remove('hidden');
+        }
+      }
+    }
+
+    function createImageWithFallback(imageUrl, title, container) {
+      const imgContainer = container.querySelector('.img-container');
+      const placeholder = imgContainer.querySelector('.img-placeholder');
+      
+      if (!imageUrl || imageUrl.trim() === '') {
+        // Нет URL изображения - показываем плейсхолдер
+        placeholder.classList.add('show');
+        placeholder.innerHTML = `
+          <div class="text-center">
+            <div class="text-2xl mb-2">🎮</div>
+            <div class="font-medium">${title}</div>
+            <div class="text-xs mt-1 opacity-75">Изображение недоступно</div>
+          </div>
+        `;
+        return;
+      }
+
+      // Создаем элемент изображения
+      const img = document.createElement('img');
+      img.className = 'game-img loading';
+      img.alt = title;
+      img.loading = 'lazy';
+
+      // Обработчик успешной загрузки
+      img.onload = function() {
+        this.classList.remove('loading');
+        placeholder.classList.remove('show');
+        loadedImages++;
+        updateImageStats();
+      };
+
+      // Обработчик ошибки загрузки
+      img.onerror = function() {
+        this.classList.add('error');
+        placeholder.classList.add('show');
+        placeholder.innerHTML = `
+          <div class="text-center">
+            <div class="text-2xl mb-2">🎮</div>
+            <div class="font-medium">${title}</div>
+            <div class="text-xs mt-1 opacity-75">Ошибка загрузки обложки</div>
+          </div>
+        `;
+        loadedImages++;
+        updateImageStats();
+      };
+
+      // Устанавливаем src и добавляем в контейнер
+      img.src = imageUrl;
+      imgContainer.appendChild(img);
+    }
+
     async function fetchGames() {
       try {
         // Сначала пробуем загрузить локальный файл для тестирования
@@ -174,42 +313,51 @@
           return;
         }
 
+        // Подсчитываем общее количество изображений
+        totalImages = list.filter(item => item[2] && item[2].trim() !== '').length;
+        updateImageStats();
+
         const container = document.getElementById('games-container');
         container.classList.remove('hidden');
-        list.forEach(([name, link], idx) => {
-          let id = link.includes('/sub/') ?
-            link.match(/\/sub\/(\d+)/)[1] :
-            link.match(/\/app\/(\d+)/)[1];
-          let imgUrl = link.includes('/sub/') ?
-            `https://steamcdn-a.akamaihd.net/steam/subs/${id}/header.jpg` :
-            `https://steamcdn-a.akamaihd.net/steam/apps/${id}/header.jpg`;
+        
+        list.forEach((item, idx) => {
+          // Поддерживаем новый формат [название, ссылка, обложка] и старый [название, ссылка]
+          const name = item[0];
+          const link = item[1];
+          const imageUrl = item[2] || ''; // URL обложки из парсера
 
           const card = document.createElement('div');
           card.className = 'card animate__animated animate__fadeInUp';
           card.style.animationDelay = `${idx * 0.1}s`;
           card.innerHTML = `
             <div class="img-container">
-              <img src="${imgUrl}"
-                   alt="${name}"
-                   class="game-img"
-                   loading="lazy"
-                   onerror="this.src='https://via.placeholder.com/460x215?text=Нет+Image'"/>
+              <div class="img-placeholder">
+                <div class="text-center">
+                  <div class="text-2xl mb-2">⏳</div>
+                  <div class="font-medium">Загрузка...</div>
+                </div>
+              </div>
               <span class="discount-badge">100% скидка</span>
             </div>
-            <div class="p-4">
-              <h3 class="text-xl font-semibold text-white mb-2">${name}</h3>
-              <a href="${link}" target="_blank" class="steam-btn">Получить в Steam</a>
+            <div class="p-6">
+              <h3 class="text-xl font-semibold text-white mb-4 leading-tight">${name}</h3>
+              <a href="${link}" target="_blank" class="steam-btn">🚀 Получить в Steam</a>
             </div>`;
+          
           container.appendChild(card);
+
+          // Создаем изображение с fallback
+          createImageWithFallback(imageUrl, name, card);
         });
+
       } catch (e) {
-        console.error(e);
+        console.error('Ошибка загрузки:', e);
         document.getElementById('loading').classList.add('hidden');
         document.getElementById('error').classList.remove('hidden');
       }
     }
+
     document.addEventListener('DOMContentLoaded', fetchGames);
   </script>
 </body>
 </html>
-
