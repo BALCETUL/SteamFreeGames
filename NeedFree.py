@@ -119,12 +119,12 @@ class SteamParser:
             
             # Различные паттерны для извлечения ID
             patterns = [
-                r'/app/(\\d+)',
-                r'/sub/(\\d+)', 
-                r'/bundle/(\\d+)',
-                r'[?&]appid=(\\d+)',
-                r'[?&]subid=(\\d+)',
-                r'[?&]bundleid=(\\d+)'
+                r'/app/(\d+)',
+                r'/sub/(\d+)', 
+                r'/bundle/(\d+)',
+                r'[?&]appid=(\d+)',
+                r'[?&]subid=(\d+)',
+                r'[?&]bundleid=(\d+)'
             ]
             
             for pattern in patterns:
@@ -152,7 +152,7 @@ class SteamParser:
                 # Очищаем и нормализуем URL
                 if img_url:
                     # Убираем параметры изменения размера, чтобы получить оригинал
-                    img_url = re.sub(r'(\\?.*$)', '', img_url)
+                    img_url = re.sub(r'(\?.*$)', '', img_url)
                     
                     # Если URL относительный, делаем абсолютным
                     if img_url.startswith('//'):
@@ -168,7 +168,7 @@ class SteamParser:
             for element in style_elements:
                 style = element.get('style', '')
                 if 'background-image' in style:
-                    match = re.search(r'url\\(["\\']?(.*?)["\\']?\\)', style)
+                    match = re.search(r'url\(["\']?(.*?)["\']?\)', style)
                     if match:
                         img_url = match.group(1)
                         if img_url.startswith('//'):
@@ -431,9 +431,9 @@ class SteamParser:
                 # Проверяем на нулевую цену
                 zero_price_patterns = [
                     r'0[.,]00',
-                    r'₽\\s*0[.,]00',
-                    r'\\$\\s*0[.,]00',
-                    r'€\\s*0[.,]00',
+                    r'₽\s*0[.,]00',
+                    r'\$\s*0[.,]00',
+                    r'€\s*0[.,]00',
                     r'Free',
                     r'Бесплатно'
                 ]
@@ -623,7 +623,7 @@ class SteamParser:
                     title = title[:200]
                 
                 # Очищаем название от лишних символов
-                title = re.sub(r'\\s+', ' ', title).strip()
+                title = re.sub(r'\s+', ' ', title).strip()
                 
                 # Валидируем URL изображения
                 if image_url and not image_url.startswith('http'):
