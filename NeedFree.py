@@ -167,5 +167,5 @@ with open("free_goods_detail.json", "w", encoding="utf-8") as fp:
     json.dump({
         "total_count": len(final_free_list),
         "free_list": final_free_list,
-        "update_time": datetime.datetime.now(tz=pytz.timezone("Europe/Moscow")).strftime('%Y-%m-%d %H:%M:%S')
+        "update_time": datetime.datetime.now(tz=pytz.timezone("Europe/Kiev")).strftime('%Y-%m-%d %H:%M:%S')
     }, fp)
