@@ -28,9 +28,9 @@ logger = logging.getLogger(__name__)
 # Константы
 API_URL_TEMPLATE = "https://store.steampowered.com/search/results/?query&start={pos}&count=100&infinite=1&specials=1"
 BACKUP_API_URL = "https://store.steampowered.com/search/results/?query&start={pos}&count=50&infinite=1&specials=1"
-THREAD_CNT = 6  # Возвращаем как было
+THREAD_CNT = 6  # Уменьшили для большей стабильности
 MAX_RETRIES = 5
-DELAY_BETWEEN_REQUESTS = 1.5  # Возвращаем как было
+DELAY_BETWEEN_REQUESTS = 1.5  # Увеличили задержку
 
 @dataclass
 class GameInfo:
@@ -139,80 +139,40 @@ class SteamParser:
         except Exception as e:
             logger.warning(f"Ошибка извлечения ID из URL {url}: {e}")
             return hashlib.md5(url.encode()).hexdigest()[:16]
-    
+
     def extract_numeric_id(self, url: str) -> Optional[str]:
-        """Извлекаем числовой Steam App ID"""
+        """Извлекаем числовой Steam App ID для обложки"""
         try:
-            patterns = [
-                r'/app/(\d+)',
-                r'/sub/(\d+)', 
-                r'/bundle/(\d+)',
-                r'[?&]appid=(\d+)',
-                r'[?&]subid=(\d+)',
-            ]
-            
+            patterns = [r'/app/(\d+)', r'/sub/(\d+)', r'/bundle/(\d+)', r'[?&]appid=(\d+)']
             for pattern in patterns:
                 match = re.search(pattern, url)
                 if match:
                     return match.group(1)
-                    
-        except Exception as e:
-            logger.warning(f"Ошибка извлечения числового ID из {url}: {e}")
+        except:
+            pass
         return None
-    
+
     def get_guaranteed_image_url(self, url: str, game_container, title: str) -> str:
-        """ГАРАНТИРОВАННОЕ получение обложки игры"""
+        """ДОБАВЛЕНО: Гарантированное получение обложки"""
         try:
-            # Метод 1: Извлекаем из HTML контейнера
+            # Сначала пробуем оригинальный метод из HTML
             img_url = self.extract_image_url(game_container)
             if img_url:
-                logger.debug(f"✓ Обложка из HTML: {title}")
                 return img_url
             
-            # Метод 2: Строим URL по Steam App ID
+            # Если не получилось, строим по Steam App ID (как в твоих примерах)
             numeric_id = self.extract_numeric_id(url)
             if numeric_id:
-                # Пробуем формат как в твоих примерах
+                # Формат как в твоих примерах
                 preferred_url = f"https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{numeric_id}/capsule_sm_120.jpg"
-                
-                # Проверяем доступность
-                try:
-                    response = self.session.head(preferred_url, timeout=3)
-                    if response.status_code == 200:
-                        logger.debug(f"✓ Предпочтительная обложка: {title}")
-                        return preferred_url
-                except:
-                    pass
-                
-                # Альтернативные форматы
-                fallback_urls = [
-                    f"https://cdn.akamai.steamstatic.com/steam/apps/{numeric_id}/header.jpg",
-                    f"https://cdn.akamai.steamstatic.com/steam/apps/{numeric_id}/capsule_616x353.jpg",
-                    f"https://cdn.cloudflare.steamstatic.com/steam/apps/{numeric_id}/header.jpg"
-                ]
-                
-                for fallback_url in fallback_urls:
-                    try:
-                        response = self.session.head(fallback_url, timeout=2)
-                        if response.status_code == 200:
-                            logger.debug(f"✓ Fallback обложка: {title}")
-                            return fallback_url
-                    except:
-                        continue
-                
-                # Гарантированный fallback даже если не проверили доступность
-                logger.debug(f"✓ Гарантированный fallback: {title}")
+                logger.debug(f"Создана обложка для {title}: {preferred_url}")
                 return preferred_url
             
-            logger.warning(f"⚠ Не удалось получить обложку для: {title}")
+            logger.warning(f"Не удалось получить обложку для: {title}")
             return ""
             
         except Exception as e:
             logger.warning(f"Ошибка получения обложки для {title}: {e}")
-            # Последний fallback
-            numeric_id = self.extract_numeric_id(url)
-            if numeric_id:
-                return f"https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{numeric_id}/capsule_sm_120.jpg"
             return ""
     
     def extract_image_url(self, game_container) -> str:
@@ -374,11 +334,11 @@ class SteamParser:
                 title = title_element.get_text().strip()
                 url = game_container.get("href", "")
                 
+                # ДОБАВЛЕНО: Гарантированное получение обложки
+                image_url = self.get_guaranteed_image_url(url, game_container, title)
+                
                 if title and url:
                     game_id = self.extract_game_id(url)
-                    # ГАРАНТИРОВАННОЕ получение обложки
-                    image_url = self.get_guaranteed_image_url(url, game_container, title)
-                    
                     game = GameInfo(
                         title=title,
                         url=url,
@@ -425,10 +385,11 @@ class SteamParser:
                     title = title_element.get_text().strip()
                     url = game_container.get("href", "")
                     
+                    # ДОБАВЛЕНО: Гарантированное получение обложки
+                    image_url = self.get_guaranteed_image_url(url, game_container, title)
+                    
                     if title and url:
                         game_id = self.extract_game_id(url)
-                        image_url = self.get_guaranteed_image_url(url, game_container, title)
-                        
                         game = GameInfo(
                             title=title,
                             url=url,
@@ -473,10 +434,11 @@ class SteamParser:
                     title = title_element.get_text().strip()
                     url = game_container.get("href", "")
                     
+                    # ДОБАВЛЕНО: Гарантированное получение обложки  
+                    image_url = self.get_guaranteed_image_url(url, game_container, title)
+                    
                     if title and url:
                         game_id = self.extract_game_id(url)
-                        image_url = self.get_guaranteed_image_url(url, game_container, title)
-                        
                         game = GameInfo(
                             title=title,
                             url=url,
@@ -530,10 +492,11 @@ class SteamParser:
                     title = title_element.get_text().strip()
                     url = game_container.get("href", "")
                     
+                    # ДОБАВЛЕНО: Гарантированное получение обложки
+                    image_url = self.get_guaranteed_image_url(url, game_container, title)
+                    
                     if title and url:
                         game_id = self.extract_game_id(url)
-                        image_url = self.get_guaranteed_image_url(url, game_container, title)
-                        
                         game = GameInfo(
                             title=title,
                             url=url,
@@ -705,12 +668,12 @@ class SteamParser:
                 # Очищаем название от лишних символов
                 title = re.sub(r'\s+', ' ', title).strip()
                 
-                # Если нет обложки, пробуем восстановить
+                # ДОБАВЛЕНО: Если нет обложки, создаем по App ID
                 if not image_url:
                     numeric_id = self.extract_numeric_id(url)
                     if numeric_id:
                         image_url = f"https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{numeric_id}/capsule_sm_120.jpg"
-                        logger.info(f"Восстановлена обложка для: {title}")
+                        logger.info(f"Создана обложка для: {title}")
                     
                 validated_games.append((title, url, image_url))
                 
