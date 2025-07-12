@@ -1,1310 +1,208 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Steam Discounts</title>
-    <link rel="icon" href="https://store.steampowered.com/favicon.ico">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --bg-dark: #121212;
-            --bg-card: #1e1e1e;
-            --bg-surface: #242424;
-            --accent-primary: #4CAF50;
-            --accent-secondary: #2196F3;
-            --text-primary: #ffffff;
-            --text-secondary: #b0b0b0;
-            --text-muted: #757575;
-            --border-radius: 8px;
-            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            --shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.3);
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            background-color: var(--bg-dark);
-            color: var(--text-primary);
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            line-height: 1.6;
-            min-height: 100vh;
-            padding-bottom: 2rem;
-        }
-
-        .container {
-            max-width: 1600px;
-            padding: 0 1rem;
-        }
-
-        .app-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1.5rem 0;
-            margin-bottom: 1.5rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        }
-
-        .app-title {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            font-size: 1.75rem;
-            font-weight: 700;
-            color: var(--text-primary);
-        }
-
-        .app-title i {
-            color: var(--accent-primary);
-            font-size: 2rem;
-        }
-
-        .total-count {
-            background: var(--bg-surface);
-            border-radius: var(--border-radius);
-            padding: 0.5rem 1rem;
-            font-size: 0.9rem;
-            font-weight: 500;
-            box-shadow: var(--shadow);
-        }
-
-        .filter-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .filter-group {
-            background: var(--bg-surface);
-            border-radius: var(--border-radius);
-            padding: 1.25rem;
-            box-shadow: var(--shadow);
-            transition: var(--transition);
-            position: relative;
-            z-index: 10;
-        }
-
-        .filter-group:hover {
-            box-shadow: var(--shadow-hover);
-        }
-
-        .filter-group-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            color: var(--accent-secondary);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .filter-group-title i {
-            font-size: 1.1rem;
-        }
-
-        .form-control {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: var(--text-primary);
-            border-radius: var(--border-radius);
-            padding: 0.75rem 1rem;
-            transition: var(--transition);
-        }
-
-        .form-control:focus {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: var(--accent-primary);
-            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
-            color: var(--text-primary);
-        }
-
-        .form-control::placeholder {
-            color: var(--text-muted);
-        }
-
-        .slider-group {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            margin-top: 0.75rem;
-        }
-
-        .slider-input {
-            width: 80px;
-            flex-shrink: 0;
-        }
-
-        .noUi-target {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: var(--border-radius);
-            border: none;
-            height: 6px;
-            flex-grow: 1;
-        }
-
-        .noUi-connect {
-            background: var(--accent-primary);
-        }
-
-        .noUi-handle {
-            width: 20px !important;
-            height: 20px !important;
-            right: -10px !important;
-            top: -7px !important;
-            border-radius: 50%;
-            background: var(--bg-card);
-            border: 2px solid var(--accent-primary);
-            cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-            transition: var(--transition);
-        }
-
-        .noUi-handle:hover {
-            transform: scale(1.15);
-        }
-
-        .noUi-handle:after, .noUi-handle:before {
-            content: none;
-        }
-
-        .platform-filters {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .platform-checkbox, .additional-filter {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            cursor: pointer;
-            transition: var(--transition);
-            padding: 0.5rem;
-            border-radius: var(--border-radius);
-        }
-
-        .platform-checkbox:hover, .additional-filter:hover {
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .platform-checkbox img {
-            width: 24px;
-            height: 24px;
-            filter: grayscale(0.8);
-            transition: var(--transition);
-        }
-
-        input[type="checkbox"]:checked + img {
-            filter: grayscale(0);
-        }
-
-        .additional-filters {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .tags-filter-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            padding: 0.5rem;
-            min-height: 48px;
-            border-radius: var(--border-radius);
-            background: rgba(255, 255, 255, 0.03);
-        }
-
-        .filter-tag {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.5rem 0.75rem;
-            border-radius: var(--border-radius);
-            background: rgba(33, 150, 243, 0.15);
-            color: var(--text-primary);
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: var(--transition);
-            animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .filter-tag:hover {
-            background: rgba(33, 150, 243, 0.25);
-            transform: translateY(-2px);
-        }
-
-        .remove-tag {
-            margin-left: 0.5rem;
-            font-size: 1rem;
-            transition: var(--transition);
-        }
-
-        .remove-tag:hover {
-            color: #ff6b6b;
-            transform: scale(1.2);
-        }
-
-        .add-tag {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px dashed rgba(255, 255, 255, 0.2);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .add-tag:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: var(--accent-secondary);
-        }
-
-        .game-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .game-card {
-            background: var(--bg-card);
-            border-radius: var(--border-radius);
-            overflow: hidden;
-            transition: var(--transition);
-            box-shadow: var(--shadow);
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            position: relative;
-        }
-
-        .game-card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow-hover);
-        }
-
-        .game-header {
-            display: flex;
-            align-items: center;
-            padding: 0.75rem 1rem;
-            min-height: 70px;
-        }
-
-        .game-image-container {
-            flex-shrink: 0;
-            width: 120px;
-            height: 45px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            border-radius: 4px;
-            background: rgba(0, 0, 0, 0.2);
-        }
-
-        .game-image {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }
-
-        .game-discount-container {
-            padding-left: 1rem;
-            flex-grow: 1;
-        }
-
-        .game-discount {
-            font-weight: 700;
-            font-size: 1.2rem;
-            color: white;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-        }
-
-        .game-price {
-            font-size: 0.9rem;
-            font-weight: 500;
-            color: rgba(255, 255, 255, 0.9);
-            margin-top: 0.2rem;
-        }
-
-        .game-body {
-            padding: 1.25rem;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .game-name {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            color: var(--text-primary);
-            line-height: 1.3;
-            transition: var(--transition);
-        }
-
-        .game-card:hover .game-name {
-            color: var(--accent-secondary);
-        }
-
-        .game-meta {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 1rem;
-            font-size: 0.9rem;
-        }
-
-        .platform-icons {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .platform-icon {
-            width: 20px;
-            height: 20px;
-            opacity: 0.8;
-            transition: var(--transition);
-        }
-
-        .game-card:hover .platform-icon {
-            opacity: 1;
-            transform: translateY(-2px);
-        }
-
-        .vr-badge {
-            background: rgba(106, 53, 184, 0.3);
-            color: #b39ddb;
-            padding: 0.2rem 0.5rem;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .content-type {
-            background: rgba(255, 255, 255, 0.08);
-            color: var(--text-secondary);
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-
-        .tags-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-top: auto;
-            padding-top: 1rem;
-            max-height: 80px;
-            overflow-y: auto;
-            padding-right: 5px;
-        }
-
-        .tags-container::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .tags-container::-webkit-scrollbar-thumb {
-            background: var(--accent-secondary);
-            border-radius: 2px;
-        }
-
-        .game-tag {
-            display: inline-block;
-            padding: 0.3rem 0.6rem;
-            border-radius: 20px;
-            background: rgba(255, 255, 255, 0.08);
-            color: var(--text-secondary);
-            font-size: 0.75rem;
-            font-weight: 500;
-            transition: var(--transition);
-            white-space: nowrap;
-        }
-
-        .game-tag-selected {
-            background: rgba(76, 175, 80, 0.2);
-            color: var(--accent-primary);
-        }
-
-        .game-tag-not-selected {
-            background: rgba(255, 107, 107, 0.15);
-            color: #ff6b6b;
-            opacity: 0.6;
-        }
-
-        .game-tag:hover {
-            background: rgba(33, 150, 243, 0.2);
-            color: var(--accent-secondary);
-            transform: translateY(-2px);
-        }
-
-        .pagination-container {
-            display: flex;
-            justify-content: center;
-            margin: 2rem 0;
-        }
-
-        .pagination {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-
-        .page-item {
-            list-style: none;
-        }
-
-        .page-link {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: var(--bg-surface);
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-weight: 500;
-            transition: var(--transition);
-            border: none;
-        }
-
-        .page-link:hover {
-            background: rgba(33, 150, 243, 0.2);
-            color: var(--accent-secondary);
-            transform: translateY(-2px);
-        }
-
-        .page-item.active .page-link {
-            background: var(--accent-primary);
-            color: white;
-            box-shadow: 0 4px 10px rgba(76, 175, 80, 0.3);
-        }
-
-        .page-item.disabled .page-link {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .app-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-top: 1.5rem;
-            margin-top: 2rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.08);
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-
-        .github-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--accent-secondary) !important;
-            text-decoration: none !important;
-            transition: var(--transition);
-            padding: 0.5rem 1rem;
-            border-radius: var(--border-radius);
-        }
-
-        .github-link:hover {
-            background: rgba(33, 150, 243, 0.1);
-            transform: translateY(-2px);
-        }
-
-        .modal-content {
-            background: var(--bg-card);
-            border-radius: var(--border-radius);
-            border: none;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-        }
-
-        .modal-header {
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 1.25rem;
-        }
-
-        .modal-title {
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .modal-header .btn-close {
-            filter: invert(1);
-            opacity: 0.7;
-            transition: var(--transition);
-        }
-
-        .modal-header .btn-close:hover {
-            opacity: 1;
-            transform: scale(1.1);
-        }
-
-        .tag-search-container {
-            padding: 1rem;
-            background: var(--bg-surface);
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-
-        .tags-alphabet-container {
-            padding: 0 1rem 1rem;
-            max-height: 60vh;
-            overflow-y: auto;
-        }
-
-        .letter-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .letter-header {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: var(--accent-primary);
-            margin: 0.5rem 0 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .tags-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-
-        .modal-tag {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.5rem 1rem;
-            border-radius: var(--border-radius);
-            background: var(--bg-surface);
-            color: var(--text-primary);
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .modal-tag:hover {
-            background: var(--accent-secondary);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 10px rgba(33, 150, 243, 0.3);
-        }
-
-        .modal-tag-selected {
-            background: var(--accent-primary);
-            cursor: default;
-        }
-
-        .modal-tag-selected:hover {
-            background: var(--accent-primary);
-            transform: none;
-            box-shadow: none;
-        }
-
-        .selected-check {
-            margin-left: 0.5rem;
-            font-weight: 700;
-        }
-
-        .filter-container .stretched-link::after {
-            display: none !important;
-        }
-
-        @media (max-width: 768px) {
-            .app-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 1rem;
-            }
-            
-            .game-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            
-            .game-discount {
-                margin-top: 0.5rem;
-            }
-            
-            .filter-container {
-                grid-template-columns: 1fr;
-            }
-            
-            .game-list {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-5px); }
-        }
-
-        .pulse {
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SteamFreeGames — Бесплатные предложения Steam</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+  <style>
+    body {
+      background: linear-gradient(135deg, #1a202c, #2d3748);
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+      position: relative;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .loading-spinner {
+      border: 4px solid rgba(255,255,255,0.3);
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+    .error-message {
+      background: #ef4444;
+      color: #fff;
+      padding: 1rem;
+      border-radius: .5rem;
+      margin-top: 1rem;
+    }
+    .card {
+      background: #1f2937;
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      border-radius: .5rem;
+      overflow: hidden;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      opacity: 0;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+    }
+    .img-container {
+      position: relative;
+    }
+    .game-img {
+      width: 100%;
+      aspect-ratio: 460/215;
+      object-fit: cover;
+      display: block;
+    }
+    .discount-badge {
+      position: absolute;
+      top: 0.2rem;
+      right: 0.2rem;
+      background: linear-gradient(to right, #22c55e, #16a34a);
+      color: #fff;
+      padding: 0.1rem 0.3rem;
+      border-radius: .25rem;
+      font-weight: 600;
+      box-shadow: 0 0 5px rgba(34,197,94,0.5);
+      opacity: 0.9;
+      z-index: 10;
+      animation: fadeIn 0.5s ease-out;
+      /* font-size removed for larger default text */
+    }
+    .steam-btn {
+      background: linear-gradient(to right, #3b82f6, #2563eb);
+      padding: .5rem 1rem;
+      border-radius: .25rem;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      color: #fff;
+    }
+    .steam-btn:hover {
+      background: linear-gradient(to right, #2563eb, #1d4ed8);
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+    }
+    .update-box {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: rgba(31,41,55,0.8);
+      padding: .5rem 1rem;
+      border-radius: 1rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      border: 1px solid rgba(59,130,246,0.3);
+      box-shadow: 0 0 8px rgba(59,130,246,0.2);
+      font-size: .875rem;
+      color: #e2e8f0;
+      cursor: pointer;
+    }
+    .update-icon {
+      width: 1rem;
+      height: 1rem;
+      fill: #e2e8f0;
+    }
+    /* Tooltip styling */
+    .update-box .tooltip {
+      position: absolute;
+      top: 2.8rem;
+      right: 0;
+      background: rgba(31,41,55,0.9);
+      color: #e2e8f0;
+      padding: .75rem 1rem;
+      border-radius: .5rem;
+      width: 550px;         /* increased width */
+      font-size: .85rem;    /* larger text */
+      line-height: 1.4;
+      white-space: pre-line; /* respect line breaks */
+      opacity: 0;
+      transform: translateY(-5px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      pointer-events: none;
+      z-index: 20;
+    }
+    .update-box:hover .tooltip {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+  </style>
 </head>
-<body>
-    <div class="container">
-        <header class="app-header">
-            <div class="app-title">
-                <i class="fas fa-tags pulse"></i>
-                <span>Steam Discounts</span>
-            </div>
-            <div class="total-count">
-                <span id="totalcount">Loading...</span>
-            </div>
-        </header>
+<body class="min-h-screen flex flex-col items-center p-4 relative">
 
-        <div class="filter-container">
-            <div class="filter-group">
-                <div class="filter-group-title">
-                    <i class="fas fa-search"></i>
-                    <span>Search</span>
-                </div>
-                <input type="text" class="form-control" id="nameFilter" placeholder="Search game...">
-            </div>
-
-            <div class="filter-group">
-                <div class="filter-group-title">
-                    <i class="fas fa-percentage"></i>
-                    <span>Discount Range</span>
-                </div>
-                <div class="slider-group">
-                    <input type="number" class="form-control slider-input" id="minDiscount" placeholder="Min%">
-                    <div id="discountSlider" style="flex-grow:1;"></div>
-                    <input type="number" class="form-control slider-input" id="maxDiscount" placeholder="Max%">
-                </div>
-            </div>
-
-            <div class="filter-group">
-                <div class="filter-group-title">
-                    <i class="fas fa-dollar-sign"></i>
-                    <span>Price Range</span>
-                </div>
-                <div class="slider-group">
-                    <input type="number" class="form-control slider-input" id="minPrice" placeholder="Min$">
-                    <div id="priceSlider" style="flex-grow:1;"></div>
-                    <input type="number" class="form-control slider-input" id="maxPrice" placeholder="Max$">
-                </div>
-            </div>
-
-            <div class="filter-group">
-                <div class="filter-group-title">
-                    <i class="fas fa-tags"></i>
-                    <span>Tags</span>
-                </div>
-                <div id="tagsFilterContainer" class="tags-filter-container"></div>
-            </div>
-
-            <div class="filter-group">
-                <div class="filter-group-title">
-                    <i class="fas fa-filter"></i>
-                    <span>Platform</span>
-                </div>
-                
-                <div class="platform-filters">
-                    <label class="platform-checkbox">
-                        <input type="checkbox" id="winFilter">
-                        <img src="https://store.fastly.steamstatic.com/public/images/v6/icon_platform_win.png" alt="Windows">
-                        <span>Windows</span>
-                    </label>
-                    <label class="platform-checkbox">
-                        <input type="checkbox" id="macFilter">
-                        <img src="https://store.fastly.steamstatic.com/public/images/v6/icon_platform_mac.png" alt="Mac">
-                        <span>Mac</span>
-                    </label>
-                    <label class="platform-checkbox">
-                        <input type="checkbox" id="linuxFilter">
-                        <img src="https://store.fastly.steamstatic.com/public/images/v6/icon_platform_linux.png" alt="Linux">
-                        <span>Linux</span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="filter-group">
-                <div class="filter-group-title">
-                    <i class="fas fa-filter"></i>
-                    <span>Type</span>
-                </div>
-
-                <div class="additional-filters">
-                    <label class="additional-filter">
-                        <input type="checkbox" id="appFilter" checked>
-                        <i class="fas fa-gamepad"></i>
-                        <span>Apps</span>
-                    </label>
-                    <label class="additional-filter">
-                        <input type="checkbox" id="bundleFilter" checked>
-                        <i class="fas fa-box"></i>
-                        <span>Bundles</span>
-                    </label>
-                    <label class="additional-filter">
-                        <input type="checkbox" id="soundtrackFilter" checked>
-                        <i class="fas fa-music"></i>
-                        <span>Soundtracks</span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="filter-group">
-                <div class="filter-group-title">
-                    <i class="fas fa-filter"></i>
-                    <span>VR</span>
-                </div>
-
-                <div class="additional-filters">
-                    <label class="additional-filter">
-                        <input type="checkbox" id="vrFilter">
-                        <i class="fas fa-vr-cardboard"></i>
-                        <span>VR Only</span>
-                    </label>
-                </div>
-            </div>
-        </div>
-
-        <div class="game-list" id="listcontent"></div>
-
-        <div id="pagination" class="pagination-container"></div>
-
-        <footer class="app-footer">
-            <div>
-                Latest Updated (UTC+3): <span id="uptime" style="color: var(--accent-primary);"></span>
-            </div>
-            <a href="https://github.com/" class="github-link" target="_blank">
-                <i class="fab fa-github"></i>
-                <span> GitHub</span>
-            </a>
-        </footer>
+  <div class="update-box animate__animated animate__fadeIn" style="animation-delay: 0.5s;">
+    <svg class="update-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    Обновлено (UTC+3): <span id="update-time">-</span>
+    <div class="tooltip">
+      Этот сайт автоматически собирает "ИГРЫ и DLC" со скидкой 100% в Steam.
+      Обновление данных происходит каждый час. (могут быть задержка от сервера)
+      Скрипт парсит магазин Steam и обновляет список в JSON.
     </div>
+  </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <div class="w-full text-center mb-8 mt-12">
+    <h1 class="text-4xl md:text-6xl font-bold mb-2 animate__fadeIn text-white">SteamFreeGames</h1>
+    <p class="text-lg text-gray-300 animate__fadeIn" style="animation-delay: 0.2s;">Сегодня бесплатные предложения в Steam со 100% скидкой!</p>
+    <p class="text-md mt-4 animate__fadeIn text-white" style="animation-delay: 0.4s;">Бесплатно сейчас: <span id="total-count">0</span></p>
+  </div>
 
-    <script>
-        let allGames = [];
-        let discountSlider, priceSlider;
-        let filterTimeout;
-        let selectedTags = [];
-        let allAvailableTags = [];
-        let modalEventHandlersAttached = false;
+  <div id="loading" class="flex items-center justify-center my-8"><div class="loading-spinner"></div></div>
+  <div id="error" class="text-center hidden"><p class="error-message">Не удалось загрузить список. Попробуйте позже!</p></div>
+  <div id="no-games" class="text-center text-gray-300 hidden"><p class="text-xl">На данный момент нет бесплатных предложений.</p></div>
 
-        const DEBOUNCE_DELAY = 500;
+  <div id="games-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl w-full hidden"></div>
 
-        let currentPage = 1;
-        const itemsPerPage = 24;
-        let filteredGames = [];
-        const pageBorder = 2;
+  <script>
+    async function fetchGames() {
+      try {
+        const resp = await fetch('https://raw.githubusercontent.com/BALCETUL/SteamFreeGames/main/free_goods_detail.json', { cache: 'no-store' });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const data = await resp.json();
 
-        let platformFilters = {
-            win: false,
-            mac: false,
-            linux: false
-        };
-        let vrFilter = false;
-        let appFilter = true;
-        let bundleFilter = true;
-        let soundtrackFilter = true;
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('total-count').textContent = data.total_count || 0;
+        document.getElementById('update-time').textContent = data.update_time || '-';
 
-        function getColor(percent) {
-            percent = Math.max(1, Math.min(100, percent));
-            const hue = (percent * 120 / 100).toString(10);
-            return `hsl(${hue}, 80%, 50%)`;
+        const list = data.free_list || [];
+        if (!list.length) {
+          document.getElementById('no-games').classList.remove('hidden');
+          return;
         }
 
-        function renderGames(games, page = 1) {
-            const start = (page - 1) * itemsPerPage;
-            const end = start + itemsPerPage;
-            const pagedGames = games.slice(start, end);
+        const container = document.getElementById('games-container');
+        container.classList.remove('hidden');
+        list.forEach(([name, link], idx) => {
+          let id = link.includes('/sub/') ?
+            link.match(/\/sub\/(\d+)/)[1] :
+            link.match(/\/app\/(\d+)/)[1];
+          let imgUrl = link.includes('/sub/') ?
+            `https://steamcdn-a.akamaihd.net/steam/subs/${id}/header.jpg` :
+            `https://steamcdn-a.akamaihd.net/steam/apps/${id}/header.jpg`;
 
-            const fragment = document.createDocumentFragment();
-
-            pagedGames.forEach(game => {
-                const gameCard = document.createElement('div');
-                gameCard.className = 'game-card';
-                
-                const discountColor = getColor(game.discount);
-                
-                let tagsHTML = '';
-                if (game.tags && game.tags.length > 0) {
-                    tagsHTML = `
-                        <div class="tags-container">
-                            ${game.tags.map(tag => {
-                                const tagId = parseInt(Object.keys(allAvailableTags).find(
-                                    key => allAvailableTags[key] === tag
-                                ));
-                                const isSelected = selectedTags.includes(tagId);
-
-                                let tagClass = 'game-tag';
-                                if (selectedTags.length > 0) {
-                                    tagClass = isSelected ? 'game-tag game-tag-selected' : 'game-tag game-tag-not-selected';
-                                }
-
-                                return `<span class="${tagClass}">${tag}</span>`;
-                            }).join('')}
-                        </div>
-                    `;
-                }
-
-                gameCard.innerHTML = `
-                    <div class="game-header" style="background: linear-gradient(90deg, ${discountColor} 0%, #1e1e1e 100%)">
-                        <div class="game-image-container">
-                            <img class="game-image" src="${game.image}" alt="${game.name}">
-                        </div>
-                        <div class="game-discount-container">
-                            <div class="game-discount">-${game.discount}%</div>
-                            <div class="game-price">${game.originalPrice} → ${game.discountPrice}</div>
-                        </div>
-                    </div>
-                    <div class="game-body">
-                        <h3 class="game-name">${game.name}</h3>
-                        
-                        <div class="game-meta">
-                            <div class="platform-icons">
-                                ${game.for_win ? '<img src="https://store.fastly.steamstatic.com/public/images/v6/icon_platform_win.png" class="platform-icon" title="Windows">' : ''}
-                                ${game.for_mac ? '<img src="https://store.fastly.steamstatic.com/public/images/v6/icon_platform_mac.png" class="platform-icon" title="Mac">' : ''}
-                                ${game.for_linux ? '<img src="https://store.fastly.steamstatic.com/public/images/v6/icon_platform_linux.png" class="platform-icon" title="Linux">' : ''}
-                                ${game.for_vr ? '<span class="vr-badge">VR</span>' : ''}
-                            </div>
-                            <div class="content-type">
-                                ${game.is_bundle ? 'Bundle' : game.is_soundtrack ? 'Soundtrack' : 'App'}
-                            </div>
-                        </div>
-                        
-                        ${tagsHTML}
-                    </div>
-                    <a href="${game.link}" class="stretched-link" target="_blank"></a>
-                `;
-                
-                fragment.appendChild(gameCard);
-            });
-
-            $('#listcontent').empty().append(fragment);
-            $('#totalcount').text(`${pagedGames.length} of ${filteredGames.length}/${allGames.length} (Page ${page}/${Math.ceil(filteredGames.length/itemsPerPage)})`);
-        }
-
-        function updatePagination(totalItems) {
-            const totalPages = Math.ceil(totalItems / itemsPerPage);
-            const pagination = $('#pagination');
-            pagination.empty();
-
-            const paginationList = $('<ul>').addClass('pagination');
-
-            const prevItem = $('<li>').addClass('page-item' + (currentPage === 1 ? ' disabled' : ''));
-            prevItem.append($('<a>').addClass('page-link')
-                .html('<i class="fas fa-chevron-left"></i>')
-                .click(() => {
-                    if(currentPage > 1) {
-                        currentPage--;
-                        renderGames(filteredGames, currentPage);
-                        updatePagination(filteredGames.length);
-                    }
-                }));
-            paginationList.append(prevItem);
-
-            const startPage = Math.max(1, currentPage - pageBorder);
-            const endPage = Math.min(totalPages, currentPage + pageBorder);
-
-            if (currentPage > (pageBorder + 1)) {
-                const firstPage = $('<li>').addClass('page-item' + (1 === currentPage ? ' active' : ''));
-                firstPage.append($('<a>').addClass('page-link')
-                    .text(1)
-                    .click(() => {
-                        currentPage = 1;
-                        renderGames(filteredGames, currentPage);
-                        updatePagination(filteredGames.length);
-                    }));
-                paginationList.append(firstPage);
-            }
-            if (currentPage > (pageBorder + 2)) {
-                const firstEmptyPage = $('<li>').addClass('page-item');
-                firstEmptyPage.append($('<a>').addClass('page-link').text('...'));
-                paginationList.append(firstEmptyPage);
-            }
-
-            for(let i = startPage; i <= endPage; i++) {
-                const pageItem = $('<li>').addClass('page-item' + (i === currentPage ? ' active' : ''));
-                pageItem.append($('<a>').addClass('page-link')
-                    .text(i)
-                    .click(() => {
-                        currentPage = i;
-                        renderGames(filteredGames, currentPage);
-                        updatePagination(filteredGames.length);
-                    }));
-                paginationList.append(pageItem);
-            }
-
-            if (currentPage < (totalPages - pageBorder - 1)) {
-                const lastEmptyPage = $('<li>').addClass('page-item');
-                lastEmptyPage.append($('<a>').addClass('page-link').text('...'));
-                paginationList.append(lastEmptyPage);
-            }
-            if (currentPage < (totalPages - pageBorder - 0)) {
-                const lastPage = $('<li>').addClass('page-item' + (totalPages === currentPage ? ' active' : ''));
-                lastPage.append($('<a>').addClass('page-link')
-                    .text(totalPages)
-                    .click(() => {
-                        currentPage = totalPages;
-                        renderGames(filteredGames, currentPage);
-                        updatePagination(filteredGames.length);
-                    }));
-                paginationList.append(lastPage);
-            }
-
-            const nextItem = $('<li>').addClass('page-item' + (currentPage === totalPages ? ' disabled' : ''));
-            nextItem.append($('<a>').addClass('page-link')
-                .html('<i class="fas fa-chevron-right"></i>')
-                .click(() => {
-                    if(currentPage < totalPages) {
-                        currentPage++;
-                        renderGames(filteredGames, currentPage);
-                        updatePagination(filteredGames.length);
-                    }
-                }));
-            paginationList.append(nextItem);
-
-            pagination.append(paginationList);
-        }
-
-        function initSliders(maxPrice) {
-            discountSlider = noUiSlider.create(document.getElementById('discountSlider'), {
-                start: [0, 100],
-                connect: true,
-                range: { min: 0, max: 100 },
-                step: 1,
-                format: {
-                    to: value => Math.round(value),
-                    from: value => Number(value)
-                },
-                behaviour: 'drag-tap'
-            });
-
-            priceSlider = noUiSlider.create(document.getElementById('priceSlider'), {
-                start: [0, maxPrice],
-                connect: true,
-                range: { min: 0, max: maxPrice },
-                step: 0.01,
-                format: {
-                    to: value => value.toFixed(2),
-                    from: value => Number(value)
-                }
-            });
-
-            setupSliderSync(discountSlider, 'minDiscount', 'maxDiscount');
-            setupSliderSync(priceSlider, 'minPrice', 'maxPrice');
-        }
-
-        function setupSliderSync(slider, minId, maxId) {
-            const minInput = document.getElementById(minId);
-            const maxInput = document.getElementById(maxId);
-
-            slider.on('update', values => {
-                minInput.value = values[0];
-                maxInput.value = values[1];
-                debouncedFilter();
-            });
-
-            [minInput, maxInput].forEach(input => {
-                input.addEventListener('change', () => {
-                    slider.set([minInput.value || 0, maxInput.value || slider.options.range.max]);
-                });
-            });
-        }
-
-        function debouncedFilter() {
-            clearTimeout(filterTimeout);
-            filterTimeout = setTimeout(filterGames, DEBOUNCE_DELAY);
-        }
-
-        function filterGames() {
-            const searchText = $('#nameFilter').val().toLowerCase();
-            const [minDiscount, maxDiscount] = discountSlider.get();
-            const [minPrice, maxPrice] = priceSlider.get();
-
-            filteredGames = allGames.filter(game => {
-                const nameMatch = game.name.toLowerCase().includes(searchText);
-                const discountMatch = game.discount >= minDiscount && game.discount <= maxDiscount;
-                const priceMatch = game.numericPrice >= minPrice && game.numericPrice <= maxPrice;
-                
-                let tagsMatch = true;
-                if (selectedTags.length > 0) {
-                    if (!game.tags || !game.numericTags) return false;
-                    tagsMatch = selectedTags.every(tagId => 
-                        game.numericTags.includes(tagId)
-                    );
-                }
-                
-                const platformMatch = 
-                    (!platformFilters.win || game.for_win) &&
-                    (!platformFilters.mac || game.for_mac) &&
-                    (!platformFilters.linux || game.for_linux);
-                
-                const vrMatch = !vrFilter || game.for_vr;
-                
-                let matchApp = false;
-                let matchBundle = false;
-                let matchSoundtrack = false;
-                if (appFilter && (game.is_bundle == false && game.is_soundtrack == false)) {
-                    matchApp = true;
-                }
-                if (bundleFilter && (game.is_bundle == true)) {
-                    matchBundle = true;
-                }
-                if (soundtrackFilter && (game.is_bundle == false && game.is_soundtrack == true)) {
-                    matchSoundtrack = true;
-                }
-                const contentMatch = matchApp || matchBundle || matchSoundtrack;
-                
-                return nameMatch && discountMatch && priceMatch && tagsMatch && platformMatch && vrMatch && contentMatch;
-            });
-
-            currentPage = 1;
-            renderGames(filteredGames, currentPage);
-            updatePagination(filteredGames.length);
-            renderTagFilter();
-        }
-
-        function showTagModal() {
-            const availableTags = allAvailableTags;
-
-            const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-
-            const groupedTags = {};
-            alphabet.forEach(letter => {
-                groupedTags[letter] = Object.entries(availableTags)
-                    .filter(([id, tag]) => tag.charAt(0).toUpperCase() === letter)
-                    .sort((a, b) => a[1].localeCompare(b[1]));
-            });
-
-            $('#tagsModal').remove();
-
-            const modal = $(`
-                <div class="modal fade" id="tagsModal" tabindex="-1" role="dialog">
-                    <div class="modal-dialog modal-lg" role="document">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">Select Tags</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="tag-search-container">
-                                    <input type="text" class="form-control tag-search-input" placeholder="Search tags...">
-                                </div>
-                                <div class="tags-alphabet-container">
-                                    ${alphabet.map(letter => `
-                                        <div class="letter-group" data-letter="${letter}">
-                                            <div class="letter-header">${letter}</div>
-                                            <div class="tags-row">
-                                                ${groupedTags[letter].length > 0 ? 
-                                                    groupedTags[letter].map(([id, tag]) => {
-                                                        const isSelected = selectedTags.includes(parseInt(id));
-                                                        return `
-                                                            <span class="modal-tag ${isSelected ? 'modal-tag-selected' : ''}" 
-                                                                  data-tag="${id}" ${isSelected ? 'data-selected="true"' : ''}>
-                                                                ${tag}
-                                                                ${isSelected ? '<span class="selected-check">✓</span>' : ''}
-                                                            </span>
-                                                        `;
-                                                    }).join('') : 
-                                                    '<div class="no-tags">No tags</div>'
-                                                }
-                                            </div>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `);
-
-            $('body').append(modal);
-
-            if (!modalEventHandlersAttached) {
-                $('body').on('input', '.tag-search-input', function() {
-                    const searchText = $(this).val().toLowerCase();
-
-                    if (searchText.length === 0) {
-                        $('.letter-group').show();
-                        $('.modal-tag').show();
-                        return;
-                    }
-
-                    $('.letter-group').each(function() {
-                        const $group = $(this);
-                        let hasMatches = false;
-
-                        $group.find('.modal-tag').each(function() {
-                            const tagText = $(this).text().toLowerCase();
-                            const isMatch = tagText.includes(searchText);
-                            $(this).toggle(isMatch);
-                            if (isMatch) hasMatches = true;
-                        });
-
-                        $group.toggle(hasMatches || $group.find('.letter-header').text().toLowerCase().includes(searchText));
-                    });
-                });
-
-                $('body').on('click', '.modal-tag:not(.modal-tag-selected)', function() {
-                    const tagId = parseInt($(this).data('tag'));
-                    if (!selectedTags.includes(tagId)) {
-                        selectedTags.push(tagId);
-                        $(this)
-                            .addClass('modal-tag-selected')
-                            .attr('data-selected', 'true')
-                            .append('<span class="selected-check">✓</span>');
-
-                        filterGames();
-                    }
-                });
-
-                modalEventHandlersAttached = true;
-            }
-
-            $('#tagsModal').on('hidden.bs.modal', function() {
-                $(this).remove();
-            });
-
-            const modalEl = new bootstrap.Modal(document.getElementById('tagsModal'));
-            modalEl.show();
-        }
-
-        function renderTagFilter() {
-            const tagsContainer = $('#tagsFilterContainer');
-            if (!tagsContainer.length) {
-                $('.filter-container').append(`
-                    <div class="filter-group">
-                        <div id="tagsFilterContainer" class="tags-filter-container"></div>
-                    </div>
-                `);
-            }
-
-            const container = $('#tagsFilterContainer');
-            container.empty();
-
-            selectedTags.forEach(tagId => {
-                const tagName = allAvailableTags[tagId] || tagId;
-                container.append(`
-                    <span class="filter-tag" data-tag="${tagId}">
-                        ${tagName} <span class="remove-tag"><i class="fas fa-times"></i></span>
-                    </span>
-                `);
-            });
-
-            container.append(`
-                <span class="filter-tag add-tag" id="addTagButton">
-                    <i class="fas fa-plus"></i> <span class="add-tag-text">Add Tag</span>
-                </span>
-            `);
-
-            $('.remove-tag').on('click', function(e) {
-                e.stopPropagation();
-                const tagId = $(this).parent().data('tag');
-                selectedTags = selectedTags.filter(id => id !== tagId);
-                filterGames();
-            });
-
-            $('#addTagButton').on('click', showTagModal);
-        }
-
-        $(document).ready(() => {
-            $('#winFilter').change(function() {
-                platformFilters.win = $(this).is(':checked');
-                filterGames();
-            });
-            
-            $('#macFilter').change(function() {
-                platformFilters.mac = $(this).is(':checked');
-                filterGames();
-            });
-            
-            $('#linuxFilter').change(function() {
-                platformFilters.linux = $(this).is(':checked');
-                filterGames();
-            });
-            
-            $('#vrFilter').change(function() {
-                vrFilter = $(this).is(':checked');
-                filterGames();
-            });
-            
-            $('#appFilter').change(function() {
-                appFilter = $(this).is(':checked');
-                filterGames();
-            });
-
-            $('#bundleFilter').change(function() {
-                bundleFilter = $(this).is(':checked');
-                filterGames();
-            });
-            
-            $('#soundtrackFilter').change(function() {
-                soundtrackFilter = $(this).is(':checked');
-                filterGames();
-            });
-
-            $.getJSON("./tags.json")
-             .done(steamTags => {
-                allAvailableTags = steamTags;
-            })
-             .fail(() => console.error('Error loading tags data')); 
-
-            $.getJSON("./free_goods_detail.json")
-             .done(data => {
-                $('#uptime').text(data.update_time);
-                allGames = data.free_list.map(item => {
-                    const price = item[2].toLowerCase() === 'free' ? 0 : parseFloat(item[2].replace(/[^\d.]/g, '')) || 0;
-                    const tags = item[6].map(id => allAvailableTags[id]);
-
-                    return {
-                        discount: item[0],
-                        originalPrice: item[1],
-                        discountPrice: item[2],
-                        name: item[3],
-                        link: item[4],
-                        image: item[5],
-                        numericPrice: price,
-                        numericTags: item[6],
-                        tags: tags,
-                        is_bundle: item[7],
-                        is_soundtrack: item[8],
-                        for_win: item[9],
-                        for_mac: item[10],
-                        for_linux: item[11],
-                        for_vr: item[12]
-                    };
-                });
-
-                const maxPrice = Math.ceil(Math.max(...allGames.map(g => g.numericPrice))) || 100;
-                initSliders(maxPrice);
-                filterGames();
-                $('#nameFilter').on('input', debouncedFilter);
-            })
-            .fail(() => console.error('Error loading games data'));
+          const card = document.createElement('div');
+          card.className = 'card animate__animated animate__fadeInUp';
+          card.style.animationDelay = `${idx * 0.1}s`;
+          card.innerHTML = `
+            <div class="img-container">
+              <img src="${imgUrl}"
+                   alt="${name}"
+                   class="game-img"
+                   loading="lazy"
+                   onerror="this.src='https://via.placeholder.com/460x215?text=Нет+Image'"/>
+              <span class="discount-badge">100% скидка</span>
+            </div>
+            <div class="p-4">
+              <h3 class="text-xl font-semibold text-white mb-2">${name}</h3>
+              <a href="${link}" target="_blank" class="steam-btn">Получить в Steam</a>
+            </div>`;
+          container.appendChild(card);
         });
-    </script>
+      } catch (e) {
+        console.error(e);
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('error').classList.remove('hidden');
+      }
+    }
+    document.addEventListener('DOMContentLoaded', fetchGames);
+  </script>
 </body>
 </html>
