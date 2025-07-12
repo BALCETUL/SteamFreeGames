@@ -7,14 +7,14 @@
       "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/544610/capsule_sm_120.jpg"
     ],
     [
-      "Fantasy General II",
-      "https://store.steampowered.com/app/1025440/Fantasy_General_II/?snr=1_7_7_2300_150_4",
-      "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1025440/capsule_sm_120.jpg"
-    ],
-    [
       "Field of Glory II: Medieval",
       "https://store.steampowered.com/app/1368870/Field_of_Glory_II_Medieval/?snr=1_7_7_2300_150_5",
       "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1368870/capsule_sm_120.jpg"
+    ],
+    [
+      "Fantasy General II",
+      "https://store.steampowered.com/app/1025440/Fantasy_General_II/?snr=1_7_7_2300_150_4",
+      "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1025440/capsule_sm_120.jpg"
     ],
     [
       "Ultimate Zombie Defense",
@@ -22,7 +22,7 @@
       "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1035510/718169797cebbef2faf54f1dbffe9b6820c22fbe/capsule_sm_120.jpg"
     ]
   ],
-  "update_time": "2025-07-12 15:04:52",
+  "update_time": "2025-07-12 15:10:08",
   "parser_version": "4.0_guaranteed_images",
   "methods_used": [
     "discount_attribute",
