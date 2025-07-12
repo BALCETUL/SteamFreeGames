@@ -107,12 +107,12 @@ class SteamParser:
             
             # Различные паттерны для извлечения ID
             patterns = [
-                r'/app/(\\d+)',
-                r'/sub/(\\d+)', 
-                r'/bundle/(\\d+)',
-                r'[?&]appid=(\\d+)',
-                r'[?&]subid=(\\d+)',
-                r'[?&]bundleid=(\\d+)'
+                r'/app/(\d+)',
+                r'/sub/(\d+)', 
+                r'/bundle/(\d+)',
+                r'[?&]appid=(\d+)',
+                r'[?&]subid=(\d+)',
+                r'[?&]bundleid=(\d+)'
             ]
             
             for pattern in patterns:
@@ -370,9 +370,9 @@ class SteamParser:
                 # Проверяем на нулевую цену
                 zero_price_patterns = [
                     r'0[.,]00',
-                    r'₽\\s*0[.,]00',
-                    r'\\$\\s*0[.,]00',
-                    r'€\\s*0[.,]00',
+                    r'₽\s*0[.,]00',
+                    r'\$\s*0[.,]00',
+                    r'€\s*0[.,]00',
                     r'Free',
                     r'Бесплатно'
                 ]
@@ -510,7 +510,7 @@ class SteamParser:
         final_games = [game.to_tuple() for game in self.free_games.values()]
         logger.info(f"Найдено уникальных бесплатных игр: {len(final_games)}")
         
-        # Простая статистика в логах
+        # Детальная статистика
         method_stats = {}
         type_stats = {}
         for game in self.free_games.values():
@@ -553,7 +553,7 @@ class SteamParser:
                 title = title[:200]
             
             # Очищаем название от лишних символов
-            title = re.sub(r'\\s+', ' ', title).strip()
+            title = re.sub(r'\s+', ' ', title).strip()
                 
             validated_games.append((title, url))
             
@@ -582,7 +582,7 @@ class SteamParser:
                 "update_time": datetime.datetime.now(
                     tz=pytz.timezone("Europe/Kiev")
                 ).strftime('%Y-%m-%d %H:%M:%S'),
-                "parser_version": "2.1_optimized",
+                "parser_version": "2.0_improved",
                 "methods_used": ["discount_attribute", "free_text", "discount_text", "zero_price"],
                 "verification_enabled": True
             }
@@ -592,6 +592,9 @@ class SteamParser:
                 json.dump(result_data, fp, ensure_ascii=False, indent=2)
                 
             logger.info(f"Результаты сохранены: {len(validated_games)} игр")
+            
+            # Сохраняем детальную статистику
+            self.save_detailed_stats()
             
         except Exception as e:
             logger.error(f"Ошибка при сохранении результатов: {e}")
@@ -604,6 +607,36 @@ class SteamParser:
             except:
                 logger.error("Не удалось восстановить результаты")
             raise
+    
+    def save_detailed_stats(self):
+        """Сохраняем детальную статистику для отладки"""
+        try:
+            stats = {
+                "timestamp": datetime.datetime.now().isoformat(),
+                "total_games_found": len(self.free_games),
+                "games_by_method": {},
+                "games_by_type": {},
+                "detailed_games": []
+            }
+            
+            for game in self.free_games.values():
+                stats["games_by_method"][game.found_method] = stats["games_by_method"].get(game.found_method, 0) + 1
+                stats["games_by_type"][game.content_type] = stats["games_by_type"].get(game.content_type, 0) + 1
+                
+                stats["detailed_games"].append({
+                    "title": game.title,
+                    "url": game.url,
+                    "game_id": game.game_id,
+                    "method": game.found_method,
+                    "type": game.content_type,
+                    "price_info": game.price_info
+                })
+            
+            with open("parser_stats.json", "w", encoding='utf-8') as f:
+                json.dump(stats, f, ensure_ascii=False, indent=2)
+                
+        except Exception as e:
+            logger.warning(f"Не удалось сохранить статистику: {e}")
 
 def main():
     """Основная функция с улучшенной обработкой ошибок"""
@@ -611,7 +644,7 @@ def main():
     
     try:
         logger.info("="*50)
-        logger.info("ЗАПУСК ОПТИМИЗИРОВАННОГО ПАРСЕРА STEAM")
+        logger.info("ЗАПУСК УЛУЧШЕННОГО ПАРСЕРА STEAM")
         logger.info("="*50)
         
         parser = SteamParser()
