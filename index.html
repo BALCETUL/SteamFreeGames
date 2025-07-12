@@ -129,38 +129,12 @@
       box-shadow: 0 0 15px rgba(59,130,246,0.2);
       font-size: .875rem;
       color: #e2e8f0;
-      cursor: pointer;
       backdrop-filter: blur(10px);
     }
     .update-icon {
       width: 1rem;
       height: 1rem;
       fill: #e2e8f0;
-    }
-    .update-box .tooltip {
-      position: absolute;
-      top: 3.5rem;
-      right: 0;
-      background: rgba(31,41,55,0.95);
-      color: #e2e8f0;
-      padding: 1rem 1.25rem;
-      border-radius: .75rem;
-      width: 600px;
-      font-size: .875rem;
-      line-height: 1.5;
-      white-space: pre-line;
-      opacity: 0;
-      transform: translateY(-10px);
-      transition: opacity 0.3s ease, transform 0.3s ease;
-      pointer-events: none;
-      z-index: 30;
-      backdrop-filter: blur(15px);
-      border: 1px solid rgba(59,130,246,0.2);
-    }
-    .update-box:hover .tooltip {
-      opacity: 1;
-      transform: translateY(0);
-      pointer-events: auto;
     }
     .stats-info {
       position: fixed;
@@ -187,15 +161,6 @@
       <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
     </svg>
     Обновлено (UTC+3): <span id="update-time">-</span>
-    <div class="tooltip">
-      🎮 Этот сайт автоматически собирает ИГРЫ и DLC со скидкой 100% в Steam.
-
-      ⏰ Обновление данных происходит каждый час (возможны задержки от сервера).
-      
-      🔄 Новая версия 3.0: теперь парсятся реальные обложки игр прямо из Steam!
-      
-      📊 Скрипт использует 4 метода поиска для максимальной точности и обновляет список в JSON.
-    </div>
   </div>
 
   <div class="w-full text-center mb-8 mt-16">
