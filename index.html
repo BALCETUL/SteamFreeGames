@@ -121,18 +121,6 @@
       height: 1rem;
       fill: #e2e8f0;
     }
-    .stats-info {
-      position: fixed;
-      bottom: 1rem;
-      left: 1rem;
-      background: rgba(31,41,55,0.9);
-      padding: .75rem 1rem;
-      border-radius: .75rem;
-      font-size: .875rem;
-      color: #9ca3af;
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(59,130,246,0.1);
-    }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
@@ -169,25 +157,7 @@
 
   <div id="games-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl w-full hidden"></div>
 
-  <div class="stats-info hidden" id="stats-info">
-    <span id="images-count">-</span> обложек загружено
-  </div>
-
   <script>
-    let totalImages = 0;
-    let loadedImages = 0;
-
-    function updateImageStats() {
-      const statsElement = document.getElementById('stats-info');
-      const imagesCountElement = document.getElementById('images-count');
-      if (statsElement && imagesCountElement) {
-        imagesCountElement.textContent = `${loadedImages}/${totalImages}`;
-        if (totalImages > 0) {
-          statsElement.classList.remove('hidden');
-        }
-      }
-    }
-
     function createImageWithFallback(imageUrl, title, container) {
       const imgContainer = container.querySelector('.img-container');
       const placeholder = imgContainer.querySelector('.img-placeholder');
@@ -215,8 +185,6 @@
       img.onload = function() {
         this.classList.remove('loading');
         placeholder.classList.remove('show');
-        loadedImages++;
-        updateImageStats();
       };
 
       // Обработчик ошибки загрузки
@@ -230,8 +198,6 @@
             <div class="text-xs mt-1 opacity-75">Ошибка загрузки обложки</div>
           </div>
         `;
-        loadedImages++;
-        updateImageStats();
       };
 
       // Устанавливаем src и добавляем в контейнер
@@ -262,10 +228,6 @@
           document.getElementById('no-games').classList.remove('hidden');
           return;
         }
-
-        // Подсчитываем общее количество изображений
-        totalImages = list.filter(item => item[2] && item[2].trim() !== '').length;
-        updateImageStats();
 
         const container = document.getElementById('games-container');
         container.classList.remove('hidden');
