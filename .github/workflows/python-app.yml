@@ -32,7 +32,7 @@ jobs:
     - name: Update free details json
       run: |
         git pull
-        git config --global user.name "БРО"
+        git config --global user.name "BALCETUL"
         git config --global user.email "your_email@example.com"
         git commit -am "Automated update json" || echo "No changes to commit"
         git push
